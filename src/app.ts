@@ -16,6 +16,11 @@ import authRoutes from './modules/auth/auth.routes';
 import userRoutes from './modules/user/user.routes';
 import auditRoutes from './modules/audit/audit.routes';
 import uploadRoutes from './modules/upload/upload.routes';
+import invoiceRoutes from './modules/invoice/invoice.routes';
+import paymentRoutes from './modules/payment/payment.routes';
+import notificationRoutes from './modules/notification/notification.routes';
+import reportRoutes from './modules/report/report.routes';
+import dashboardRoutes from './modules/dashboard/dashboard.routes';
 
 // Create Express app
 const app = express();
@@ -42,7 +47,14 @@ app.use(
 // ===========================================
 
 // Parse JSON bodies
-app.use(express.json({ limit: '10mb' }));
+app.use(
+  express.json({
+    limit: '10mb',
+    verify: (req, _res, buffer) => {
+      (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
+    },
+  })
+);
 
 // Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -101,6 +113,11 @@ apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/audit', auditRoutes);
 apiRouter.use('/uploads', uploadRoutes);
+apiRouter.use('/invoices', invoiceRoutes);
+apiRouter.use('/payments', paymentRoutes);
+apiRouter.use('/notifications', notificationRoutes);
+apiRouter.use('/reports', reportRoutes);
+apiRouter.use('/dashboard', dashboardRoutes);
 
 app.use('/api/v1', apiRouter);
 

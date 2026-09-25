@@ -18,6 +18,7 @@ datasource db {
 enum UserRole {
   ADMIN
   MANAGER
+  SALES
   TECHNICIAN
   CUSTOMER
 }
@@ -108,10 +109,533 @@ model UploadedFile {
   createdAt DateTime @default(now())
 
   // Relations
-  uploader User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  uploader          User               @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  contractDocuments ContractDocument[]
 
   // Indexes
   @@index([uploaderId])
   @@index([mimeType])
   @@map("uploaded_files")
+}
+
+// ===========================================
+// PERSON 2 — CLIENT MODULE
+// ===========================================
+
+enum ClientCategory {
+  CORPORATE
+  RETAIL
+  GOVERNMENT
+}
+
+model Client {
+  id          String         @id @default(uuid()) @db.Uuid
+  companyName String
+  industry    String?
+  category    ClientCategory @default(CORPORATE)
+  taxId       String?        // GST / Tax ID
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
+  phone       String?
+  email       String?
+  notes       String?
+
+  // Assignment — UNRESOLVED DECISION: Should sales see only assigned clients?
+  assignedToId String? @db.Uuid
+
+  // Timestamps
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  contacts  ClientContact[]
+  sites     ClientSite[]
+  contracts Contract[]
+  assets    Asset[]
+
+  // Indexes
+  @@index([companyName])
+  @@index([category])
+  @@index([assignedToId])
+  @@index([deletedAt])
+  @@map("clients")
+}
+
+model ClientContact {
+  id        String  @id @default(uuid()) @db.Uuid
+  clientId  String  @db.Uuid
+  name      String
+  role      String? // e.g. "Primary", "Billing", "Technical"
+  phone     String?
+  email     String?
+  isPrimary Boolean @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([clientId])
+  @@index([isPrimary])
+  @@map("client_contacts")
+}
+
+model ClientSite {
+  id       String  @id @default(uuid()) @db.Uuid
+  clientId String  @db.Uuid
+  siteName String
+  address  String?
+  city     String?
+  state    String?
+  pincode  String?
+  phone    String?
+  notes    String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  client  Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assets  AssetSite[]
+
+  // Indexes
+  @@index([clientId])
+  @@map("client_sites")
+}
+
+// ===========================================
+// PERSON 2 — ASSET MODULE
+// ===========================================
+
+model Asset {
+  id              String    @id @default(uuid()) @db.Uuid
+  serialNumber    String    @unique
+  model           String
+  manufacturer    String?
+  description     String?
+  installDate     DateTime?
+  warrantyExpiry  DateTime?
+  isActive        Boolean   @default(true)
+  notes           String?
+
+  // Timestamps
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  clientId   String?        @db.Uuid
+  client     Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  sites      AssetSite[]
+  contracts  ContractAsset[]
+
+  // Indexes
+  @@index([serialNumber])
+  @@index([clientId])
+  @@index([deletedAt])
+  @@map("assets")
+}
+
+model AssetSite {
+  id       String @id @default(uuid()) @db.Uuid
+  assetId  String @db.Uuid
+  siteId   String @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  asset Asset      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  site  ClientSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, siteId])
+  @@map("asset_sites")
+}
+
+// ===========================================
+// PERSON 2 — SERVICE TYPE MODULE
+// ===========================================
+
+model ServiceType {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String   @unique
+  description       String?
+  estimatedDuration Int?     // in minutes
+  basePrice         Float?
+  isActive          Boolean  @default(true)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  contracts Contract[]
+
+  // Indexes
+  @@index([name])
+  @@index([isActive])
+  @@map("service_types")
+}
+
+// ===========================================
+// PERSON 2 — CONTRACT MODULE
+// ===========================================
+
+enum ContractType {
+  COMPREHENSIVE
+  NON_COMPREHENSIVE
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRING_SOON
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentFrequency {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  ANNUAL
+}
+
+model Contract {
+  id              String         @id @default(uuid()) @db.Uuid
+  contractNumber  String         @unique
+  clientId        String         @db.Uuid
+  type            ContractType   @default(COMPREHENSIVE)
+  status          ContractStatus @default(DRAFT)
+  serviceTypeId   String?        @db.Uuid
+
+  // Dates
+  startDate   DateTime
+  endDate     DateTime
+  renewalDate DateTime? // Calculated: endDate - 30 days
+
+  // Financials
+  value           Float?
+  paymentTerms    String?
+  billingFrequency PaymentFrequency?
+
+  // Service terms
+  includedVisits Int?
+  notes          String?
+
+  // Timestamps
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  client       Client           @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  serviceType  ServiceType?     @relation(fields: [serviceTypeId], references: [id], onDelete: SetNull)
+  assets       ContractAsset[]
+  documents    ContractDocument[]
+  sla          ContractSLA?
+  renewal      Renewal?
+  reminders    ReminderLog[]
+
+  // Indexes
+  @@index([contractNumber])
+  @@index([clientId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([renewalDate])
+  @@index([deletedAt])
+  @@map("contracts")
+}
+
+model ContractAsset {
+  id         String @id @default(uuid()) @db.Uuid
+  contractId String @db.Uuid
+  assetId    String @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  asset    Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, assetId])
+  @@map("contract_assets")
+}
+
+model ContractDocument {
+  id             String  @id @default(uuid()) @db.Uuid
+  contractId     String  @db.Uuid
+  uploadedFileId String  @db.Uuid
+  documentType   String  @default("CONTRACT") // CONTRACT, AMENDMENT, ADDENDUM
+  notes          String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  contract     Contract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  uploadedFile UploadedFile @relation(fields: [uploadedFileId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([documentType])
+  @@map("contract_documents")
+}
+
+model ContractSLA {
+  id                 String @id @default(uuid()) @db.Uuid
+  contractId         String @unique @db.Uuid
+  responseTimeHours  Int    // SLA response time in hours
+  resolutionTimeHours Int   // SLA resolution time in hours
+  penaltyClause      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("contract_slas")
+}
+
+// ===========================================
+// PERSON 2 — RENEWAL MODULE
+// ===========================================
+
+enum RenewalStatus {
+  PENDING
+  IN_DISCUSSION
+  RENEWED
+  NOT_RENEWED
+}
+
+// ===========================================
+// PERSON 4 — FINANCE ENUMS
+// ===========================================
+
+enum InvoiceSourceType {
+  CONTRACT
+  VISIT
+  MILESTONE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  UPI
+  CHEQUE
+  GATEWAY
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  IN_APP
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model Renewal {
+  id              String        @id @default(uuid()) @db.Uuid
+  contractId      String        @unique @db.Uuid
+  status          RenewalStatus @default(PENDING)
+  quotesSent      Int           @default(0)
+  lastContactDate DateTime?
+  outcomeNotes    String?
+  renewedValue    Float?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  contract   Contract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  followUps  RenewalFollowUp[]
+
+  // Indexes
+  @@index([contractId])
+  @@index([status])
+  @@map("renewals")
+}
+
+model RenewalFollowUp {
+  id              String    @id @default(uuid()) @db.Uuid
+  renewalId       String    @db.Uuid
+  notes           String
+  outcome         String?   // e.g. "CONTACTED", "QUOTE_SENT", "NO_RESPONSE"
+  nextFollowUpDate DateTime?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  renewal Renewal @relation(fields: [renewalId], references: [id], onDelete: Cascade)
+
+  @@index([renewalId])
+  @@map("renewal_follow_ups")
+}
+
+// ===========================================
+// PERSON 2 — JOB TRACKING
+// ===========================================
+
+model ReminderLog {
+  id           String @id @default(uuid()) @db.Uuid
+  contractId   String @db.Uuid
+  reminderType String // "30_DAY", "60_DAY", "90_DAY"
+  sentAt       DateTime @default(now())
+
+  // Relations
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, reminderType])
+  @@index([contractId])
+  @@index([reminderType])
+  @@index([sentAt])
+  @@map("reminder_logs")
+}
+
+// ===========================================
+// PERSON 4 — FINANCE MODELS
+// ===========================================
+
+model Invoice {
+  id            String            @id @default(uuid()) @db.Uuid
+  invoiceNumber String            @unique
+  clientId      String            @db.Uuid
+  contractId    String?           @db.Uuid
+  sourceType    InvoiceSourceType @default(CONTRACT)
+  sourceId      String?
+  issueDate     DateTime          @default(now())
+  dueDate       DateTime
+  currency      String            @default("INR")
+  status        InvoiceStatus     @default(DRAFT)
+  subtotal      Decimal           @db.Decimal(12, 2)
+  taxRate       Decimal           @default(0) @db.Decimal(5, 2)
+  taxAmount     Decimal           @db.Decimal(12, 2)
+  totalAmount   Decimal           @db.Decimal(12, 2)
+  paidAmount    Decimal           @default(0) @db.Decimal(12, 2)
+  balanceAmount Decimal           @db.Decimal(12, 2)
+  notes         String?
+  createdById   String?           @db.Uuid
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations — Client/Contract are Person 2 owned and read through ports,
+  // never mutated from Person 4 code.
+  client    Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  contract  Contract?     @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  createdBy User?         @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items     InvoiceItem[]
+  payments  Payment[]
+
+  @@index([clientId])
+  @@index([contractId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([issueDate])
+  @@index([sourceType, sourceId])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  invoiceId    String   @db.Uuid
+  description  String
+  quantity     Decimal  @default(1) @db.Decimal(12, 3)
+  unitPrice    Decimal  @db.Decimal(12, 2)
+  taxRate      Decimal  @default(0) @db.Decimal(5, 2)
+  lineSubtotal Decimal  @db.Decimal(12, 2)
+  taxAmount    Decimal  @db.Decimal(12, 2)
+  lineTotal    Decimal  @db.Decimal(12, 2)
+  createdAt    DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+model Payment {
+  id               String        @id @default(uuid()) @db.Uuid
+  paymentNumber    String        @unique
+  invoiceId        String        @db.Uuid
+  clientId         String        @db.Uuid
+  amount           Decimal       @db.Decimal(12, 2)
+  currency         String        @default("INR")
+  method           PaymentMethod
+  status           PaymentStatus @default(PENDING)
+  gatewayName      String?
+  gatewayPaymentId String?
+  gatewayReference String?
+  paidAt           DateTime?
+  appliedAt        DateTime?
+  failureReason    String?
+  metadata         Json?
+  receivedById     String?       @db.Uuid
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  // Relations — Invoice is Person 4 owned; Client is Person 2 owned.
+  invoice    Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  client     Client  @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  receivedBy User?   @relation("PaymentReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+
+  @@unique([gatewayName, gatewayPaymentId])
+  @@index([invoiceId])
+  @@index([clientId])
+  @@index([status])
+  @@index([paidAt])
+  @@map("payments")
+}
+
+model NotificationLog {
+  id           String              @id @default(uuid()) @db.Uuid
+  eventKey     String
+  channel      NotificationChannel
+  recipient    String
+  status       NotificationStatus
+  provider     String?
+  errorMessage String?
+  metadata     Json?
+  relatedId    String?
+  sentAt       DateTime?
+  createdAt    DateTime            @default(now())
+
+  // Supports the idempotent upsert used for de-duplicated notification
+  // delivery. The compound unique is the de-duplication key:
+  // (eventKey, channel, recipient).
+  @@unique([eventKey, channel, recipient])
+  @@index([eventKey])
+  @@index([status])
+  @@index([createdAt])
+  @@map("notification_logs")
 }

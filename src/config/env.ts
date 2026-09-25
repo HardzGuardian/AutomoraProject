@@ -45,6 +45,15 @@ const envSchema = z.object({
   // Account Security
   MAX_LOGIN_ATTEMPTS: z.coerce.number().int().positive().default(5),
   LOCKOUT_TIME_MS: z.coerce.number().int().positive().default(900000), // 15 minutes
+
+  // Person 4 integrations (optional; safe development defaults apply)
+  NOTIFICATION_FROM_EMAIL: z.string().email().optional(),
+  NOTIFICATION_FROM_PHONE: z.string().optional(),
+  PAYMENT_GATEWAY_NAME: z.string().default('unconfigured'),
+  PAYMENT_GATEWAY_WEBHOOK_SECRET: z.string().optional(),
+  ACCOUNTING_PROVIDER_NAME: z.string().default('unconfigured'),
+  ACCOUNTING_API_URL: z.string().url().optional(),
+  ACCOUNTING_API_KEY: z.string().optional(),
 });
 
 // Validate environment variables

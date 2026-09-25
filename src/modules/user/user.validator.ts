@@ -4,7 +4,7 @@ import { z } from 'zod';
 // USER VALIDATORS
 // ===========================================
 
-const userRoleSchema = z.enum(['ADMIN', 'MANAGER', 'TECHNICIAN', 'CUSTOMER']);
+const userRoleSchema = z.enum(['ADMIN', 'MANAGER', 'SALES', 'TECHNICIAN', 'CUSTOMER']);
 
 /**
  * Create user schema (admin)

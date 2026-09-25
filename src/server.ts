@@ -2,6 +2,7 @@ import app from './app';
 import { env } from './config/env';
 import { connectDatabase, disconnectDatabase } from './config/db';
 import { logger } from './utils/logger';
+import { initializeJobs, stopJobs } from './jobs';
 
 // ===========================================
 // SERVER STARTUP
@@ -25,6 +26,10 @@ async function startServer(): Promise<void> {
       logger.info('Created logs directory');
     }
 
+    // Start background jobs outside the test environment.
+    if (env.NODE_ENV !== 'test') {
+      initializeJobs();
+    }
     // Start HTTP server
     const server = app.listen(env.PORT, () => {
       logger.info(`
@@ -49,6 +54,7 @@ async function startServer(): Promise<void> {
       server.close(async () => {
         logger.info('HTTP server closed');
 
+        stopJobs();
         // Disconnect from database
         await disconnectDatabase();
 

@@ -12,6 +12,6 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'clover'],
-  setupFilesAfterSetup: [],
+  setupFilesAfterEnv: [],
   testTimeout: 10000,
 };

@@ -39,19 +39,21 @@ export const role = (allowedRoles: UserRole[]) => {
  */
 export const isAdmin = (role: UserRole): boolean => role === 'ADMIN';
 export const isManager = (role: UserRole): boolean => role === 'MANAGER';
+export const isSales = (role: UserRole): boolean => role === 'SALES';
 export const isTechnician = (role: UserRole): boolean => role === 'TECHNICIAN';
 export const isCustomer = (role: UserRole): boolean => role === 'CUSTOMER';
 
 /**
  * Check if user has minimum role level.
- * Role hierarchy: CUSTOMER < TECHNICIAN < MANAGER < ADMIN
+ * Role hierarchy: CUSTOMER < TECHNICIAN < SALES < MANAGER < ADMIN
  */
 export const hasMinRole = (userRole: UserRole, minRole: UserRole): boolean => {
   const hierarchy: Record<UserRole, number> = {
     CUSTOMER: 0,
     TECHNICIAN: 1,
-    MANAGER: 2,
-    ADMIN: 3,
+    SALES: 2,
+    MANAGER: 3,
+    ADMIN: 4,
   };
   return hierarchy[userRole] >= hierarchy[minRole];
 };

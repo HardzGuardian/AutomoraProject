@@ -4,7 +4,7 @@ export { Env } from '../config/env';
 // USER TYPES
 // ===========================================
 
-export type UserRole = 'ADMIN' | 'MANAGER' | 'TECHNICIAN' | 'CUSTOMER';
+export type UserRole = 'ADMIN' | 'MANAGER' | 'SALES' | 'TECHNICIAN' | 'CUSTOMER';
 
 export interface UserPayload {
   id: string;
