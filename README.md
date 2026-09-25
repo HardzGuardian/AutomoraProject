@@ -1,27 +1,26 @@
-# AMC Management System --- Person 2 Backend
+# AMC Management System — Person 2 + Person 3 Backend
 
-Backend implementation for the **Sales / Core Operations** side of an
-Annual Maintenance Contract (AMC) Management System.
+This branch contains the backend implementation for the Annual Maintenance
+Contract (AMC) Management System.
 
-This module is responsible for managing the complete sales-side
-lifecycle of:
+It currently includes:
 
--   Clients
--   Client Contacts
--   Client Sites
--   Assets
--   Service Types
--   Contracts
--   Contract Documents
--   Contract SLAs
--   Renewals
--   Renewal Follow-ups
--   Contract status automation
--   Renewal reminder automation
+-   **Person 2 — Sales / Core Operations**
+    -   Clients, contacts, sites, assets, service types, contracts, contract
+        documents, contract SLAs, renewals, and renewal follow-ups
+    -   Contract status and renewal reminder automation
+-   **Person 3 — Field Operations / Technician Side**
+    -   Scheduling and visit-generation service boundaries
+    -   Visit ownership, state transitions, photos, signatures, and
+        rescheduling rules
+    -   Ticket assignment, status transitions, and ticket messages
+    -   SLA deadline calculation, breach escalation, and monitoring job
+    -   Thin controllers, routes, validators, and automated unit tests
 
-The implementation follows the project's modular backend architecture
-and the responsibilities defined for **Person 2** in the backend team
-split.
+The implementation follows the project's modular backend architecture.
+Person 3 persistence and route registration remain dependency-gated because
+the current Prisma schema does not yet contain the Visit, Ticket, or
+field-operations SLA models.
 
 ------------------------------------------------------------------------
 
@@ -29,6 +28,7 @@ split.
 
 -   [Project Overview](#project-overview)
 -   [Person 2 Scope](#person-2-scope)
+-   [Person 3 Scope — Field Operations](#person-3-scope--field-operations)
 -   [Architecture](#architecture)
 -   [Technology Stack](#technology-stack)
 -   [Project Structure](#project-structure)
@@ -57,6 +57,7 @@ split.
 -   [Current Limitations / Pending
     Dependencies](#current-limitations--pending-dependencies)
 -   [Definition of Done](#definition-of-done)
+-   [Person 3 Backend Summary](#person-3-backend-summary)
 
 ------------------------------------------------------------------------
 
@@ -125,6 +126,111 @@ The following areas are owned by other team members:
 -   Foundation / Auth / Admin / Users / Audit / Uploads --- Person 1
 -   Scheduling / Visits / Tickets / SLA --- Person 3
 -   Invoices / Payments / Notifications / Reports --- Person 4
+
+------------------------------------------------------------------------
+
+# Person 3 Scope — Field Operations
+
+Person 3 owns the technician-facing workflow between an active service
+contract and field execution:
+
+``` text
+Contract
+   ↓
+Scheduled visits
+   ↓
+Technician execution
+   ↓
+Evidence and completion
+   ↓
+Tickets and SLA escalation
+```
+
+## Implemented Responsibilities
+
+  Area                 Responsibility
+  ------------------- ----------------------------------------------------
+  Scheduling           Generate the exact number of contract visits,
+                       distribute them across the contract period, and
+                       select technicians through skill, zone, workload,
+                       and availability ports
+  Visits               List/get visits, start, complete, attach photos and
+                       signatures, and reschedule scheduled visits
+  Tickets              Create, list, get, assign, update status, and manage
+                       ticket messages
+  SLA                  Calculate response/resolution deadlines, detect
+                       breaches, flag tickets, and escalate breaches
+  SLA Monitor Job      Run hourly, prevent overlapping runs, and invoke the
+                       notification gateway
+  Security             Enforce technician ownership and state rules in the
+                       service layer
+
+## Visit State Flow
+
+``` text
+SCHEDULED
+    ↓ start
+IN_PROGRESS
+    ↓ complete + signature required
+COMPLETED
+```
+
+Only the assigned technician can start, complete, or attach evidence.
+Managers and administrators can view visits and reschedule scheduled visits.
+Invalid state transitions return HTTP 409.
+
+## Ticket State Flow
+
+``` text
+ASSIGNED
+    ↓ assigned technician starts work
+IN_PROGRESS
+    ↓ assigned technician resolves
+RESOLVED
+```
+
+Ticket creation requires an active assigned technician. Only the assigned
+technician can change ticket status. Invalid transitions return HTTP 409.
+Ticket messages are available to the assigned technician and authorized
+managers/administrators.
+
+## Person 3 Source Layout
+
+``` text
+src/modules/scheduling/scheduling.service.ts
+src/modules/visit/
+  visit.controller.ts
+  visit.routes.ts
+  visit.service.ts
+  visit.validator.ts
+src/modules/ticket/
+  ticket.controller.ts
+  ticket.routes.ts
+  ticket.service.ts
+  ticket.validator.ts
+  ticketMessage.service.ts
+src/modules/sla/sla.service.ts
+src/jobs/slaMonitor.job.ts
+```
+
+The controllers are thin and the services contain the business rules. The
+route files are integration shells and are intentionally not registered in
+`src/app.ts` until the required Person 1 persistence models are available.
+
+## Person 3 Tests
+
+The Person 3 unit tests cover:
+
+-   Technician ownership and access
+-   Visit and ticket state transitions
+-   Required visit signature
+-   Invalid transition HTTP 409 behavior
+-   Ticket message creation
+-   SLA deadline calculation
+-   Non-breached and breached ticket detection
+-   Breach escalation and monitor-job de-duplication behavior
+
+Current result: **47 Person 3 tests passing**.
 
 ------------------------------------------------------------------------
 
@@ -863,26 +969,65 @@ All Person 2 endpoints use the `/api/v1` prefix.
   POST     `/api/v1/renewals/:id/follow-ups`    ADMIN, MANAGER, SALES
   GET      `/api/v1/renewals/:id/follow-ups`    ADMIN, MANAGER, SALES
 
+## Person 3 Visit Endpoints
+
+The following route definitions are present but remain unregistered until
+Person 1 supplies the Visit persistence models.
+
+  Method   Endpoint                         Access
+  -------- -------------------------------- -----------------------
+  GET      `/api/v1/visits`                ADMIN, MANAGER, TECHNICIAN
+  GET      `/api/v1/visits/:id`            ADMIN, MANAGER, TECHNICIAN
+  PATCH    `/api/v1/visits/:id/start`      ADMIN, MANAGER, TECHNICIAN
+  PATCH    `/api/v1/visits/:id/complete`   ADMIN, MANAGER, TECHNICIAN
+  POST     `/api/v1/visits/:id/photo`      ADMIN, MANAGER, TECHNICIAN
+  POST     `/api/v1/visits/:id/signature`  ADMIN, MANAGER, TECHNICIAN
+  PATCH    `/api/v1/visits/:id/reschedule` ADMIN, MANAGER, TECHNICIAN
+
+Service-layer ownership rules further restrict start, completion, and
+attachment operations to the assigned technician.
+
+## Person 3 Ticket Endpoints
+
+The following route definitions are present but remain unregistered until
+Person 1 supplies the Ticket and TicketMessage persistence models.
+
+  Method   Endpoint                              Access
+  -------- ------------------------------------- -----------------------
+  POST     `/api/v1/tickets`                     ADMIN, MANAGER
+  GET      `/api/v1/tickets`                     ADMIN, MANAGER, TECHNICIAN
+  GET      `/api/v1/tickets/:id`                 ADMIN, MANAGER, TECHNICIAN
+  PATCH    `/api/v1/tickets/:id/assign`          ADMIN, MANAGER
+  PATCH    `/api/v1/tickets/:id/status`          ADMIN, MANAGER, TECHNICIAN
+  POST     `/api/v1/tickets/:id/messages`        ADMIN, MANAGER, TECHNICIAN
+  GET      `/api/v1/tickets/:id/messages`        ADMIN, MANAGER, TECHNICIAN
+
+Service-layer rules require status changes to come from the assigned
+technician even when a manager/admin role is used at the route layer.
+
 ------------------------------------------------------------------------
 
 # Authentication and Authorization
 
-Person 2 uses the shared authentication and RBAC infrastructure
+Person 2 and Person 3 use the shared authentication and RBAC infrastructure
 implemented by Person 1.
 
-Supported roles relevant to this module include:
+Supported roles relevant to these modules include:
 
 ``` text
 ADMIN
 MANAGER
 SALES
+TECHNICIAN
 CUSTOMER
 ```
 
 Role checks are enforced through shared middleware.
 
 Resource ownership/scoping is enforced at the service layer where
-required.
+required. In particular, technicians can access and update only their own
+visits and assigned tickets. Visit and ticket state transitions are never
+bypassed by controller logic.
 
 ## Client Portal
 
@@ -903,7 +1048,8 @@ unresolved.
 
 # Cross-Person Dependencies
 
-Person 2 depends on services owned by other team members.
+Person 2 and Person 3 depend on services and schema owned by other team
+members.
 
 ## Person 1 --- Foundation
 
@@ -937,7 +1083,7 @@ Used for contract document handling.
 
 ------------------------------------------------------------------------
 
-## Person 3 --- Scheduling
+## Person 3 --- Field Operations
 
 ### Scheduling Service
 
@@ -948,14 +1094,36 @@ schedulingService.generateVisits(contract)
 Status:
 
 ``` text
-STUBBED
+DOMAIN LOGIC READY / PRISMA ADAPTER PENDING
 ```
 
-This dependency is required when contract activation triggers visit
-generation.
+Person 3 provides the scheduling service, deterministic visit generation,
+technician-selection ports, idempotency keys, and unit tests. Contract
+activation still needs Person 2 to invoke the service.
 
-The stub is intentionally retained until Person 3's real scheduling
-implementation is available.
+### Visit and Ticket Persistence
+
+Status:
+
+``` text
+PENDING PERSON 1 SCHEMA
+```
+
+The current Prisma schema does not contain `Visit`, `VisitPhoto`, `Ticket`,
+`TicketMessage`, technician availability, or ticket SLA breach/escalation
+models. The service interfaces are intentionally typed and throw explicit
+dependency errors until production adapters are supplied.
+
+### Person 4 Notification Gateway
+
+Person 3's SLA monitor exposes a narrow notification gateway interface:
+
+``` text
+notificationService.send(...)
+```
+
+The provider implementation is not part of Person 3 and remains a Person 4
+dependency.
 
 ------------------------------------------------------------------------
 
@@ -982,21 +1150,16 @@ The actual email/SMS/WhatsApp provider implementation belongs to Person
 
 # Audit Logging
 
-Person 2 uses the shared audit infrastructure rather than implementing a
-separate audit system.
+Person 2 and Person 3 use the shared audit infrastructure rather than
+implementing separate audit systems.
 
 Audit events are generated for important writes, including:
 
--   Client creation/update/deletion
--   Contact changes
--   Site changes
--   Asset changes
--   Contract creation/update/activation/cancellation
--   Contract asset linking/unlinking
--   Contract document operations
--   SLA changes
--   Renewal changes
--   Renewal follow-ups
+-   Client, contact, site, asset, contract, document, SLA, and renewal
+    changes
+-   Visit generation, lifecycle transitions, attachments, and rescheduling
+-   Ticket creation, assignment, status changes, and messages
+-   SLA breach flagging and escalation
 -   Automated contract status changes where applicable
 
 Audit actions and entities are registered in:
@@ -1386,24 +1549,27 @@ renewalDate = endDate - 30 days
 
 # Current Limitations / Pending Dependencies
 
-The Person 2 module is implemented, but two cross-person integrations
-remain dependent on other team members.
+Person 3's domain rules, validators, route shells, and unit tests are
+implemented. Production persistence and registration remain blocked by
+missing cross-person schema and integration work.
 
-  Dependency                                       Owner      Status
-  ------------------------------------------------ ---------- --------------
-  `schedulingService.generateVisits(contract)`     Person 3   STUBBED
-  `notificationService.sendRenewalReminder(...)`   Person 4   STUBBED
-  `auditService.log(...)`                          Person 1   READY / USED
-  `uploadService`                                  Person 1   READY / USED
+  Dependency                                      Owner      Status
+  ---------------------------------------------- ---------- --------------------
+  Visit/Ticket/Technician/SLA Prisma models        Person 1   PENDING
+  Production repository adapters                  Person 1   PENDING
+  Visit/ticket route registration                 Person 1   PENDING
+  `schedulingService.generateVisits(contract)`     Person 2   PENDING INTEGRATION
+  Asset service-history integration               Person 2   PENDING
+  `notificationService.send(...)`                 Person 4   PENDING
+  `auditService.log(...)`                         Person 1   READY / USED
+  `uploadService`                                 Person 1   READY / USED
 
-The scheduling dependency will be connected when Person 3's scheduling
-service is available.
+The optional Maps provider is not implemented because the repository has no
+maps integration pattern, provider configuration, or agreed team interface.
 
-The notification dependency will be connected when Person 4's
-notification service is available.
-
-Integration tests requiring a real database remain dependent on the
-project's test database/environment setup.
+The current route shells are not registered in `src/app.ts`, and the SLA
+monitor is not started from `src/jobs/index.ts`, to avoid exposing
+non-persistent endpoints.
 
 ------------------------------------------------------------------------
 
@@ -1428,27 +1594,43 @@ Contract Status Job  ✅ COMPLETE
 Renewal Reminder Job ✅ COMPLETE
 Audit Integration    ✅ COMPLETE
 Upload Integration   ✅ COMPLETE
-Scheduling Integration 🔲 STUBBED
-Notification Integration 🔲 STUBBED
+
+Person 3 Field Operations
+────────────────────────────────────
+Scheduling service   ✅ DOMAIN LOGIC READY
+Visit service        ✅ DOMAIN LOGIC READY
+Visit routes         🔲 UNREGISTERED / SCHEMA PENDING
+Ticket service       ✅ DOMAIN LOGIC READY
+Ticket messages      ✅ DOMAIN LOGIC READY
+Ticket routes        🔲 UNREGISTERED / SCHEMA PENDING
+SLA service          ✅ DOMAIN LOGIC READY
+SLA monitor job      ✅ IMPLEMENTED / NOT STARTED
+Notification gateway 🔲 PERSON 4 DEPENDENCY
 ```
 
 ## Build and Tests
 
 ``` text
-TypeScript compilation   ✅ CLEAN
-Automated tests          ✅ 26/26 PASS
-Background jobs          ✅ IMPLEMENTED
-RBAC integration         ✅ IMPLEMENTED
-Audit integration        ✅ IMPLEMENTED
-Upload integration       ✅ IMPLEMENTED
+Person 3 tests                 ✅ 47/47 PASS
+Full automated test suite      ✅ 73/73 PASS
+Person 3 source lint           ✅ CLEAN
+Full TypeScript compilation    ⚠️ INHERITED PERSON 1/2 ERRORS
+Full repository lint           ⚠️ INHERITED PERSON 1/2 ERRORS
+Background jobs                ✅ EXISTING JOBS + SLA MONITOR
+RBAC integration               ✅ ROUTE/SERVICE AUTHORIZATION READY
+Audit integration              ✅ EXISTING AUDIT SERVICE REUSED
+Upload integration             ✅ EXISTING UPLOAD SERVICE REUSED
 ```
 
-The TypeScript build has only the expected `seed.ts` root-directory
-warning noted during implementation.
+The Person 3 source files have no TypeScript diagnostics. The full build and
+lint commands still report existing errors in shared and Person 2 files;
+those files were intentionally not modified as part of Person 3 work.
 
 ------------------------------------------------------------------------
 
 # Definition of Done
+
+## Person 2
 
 A Person 2 module is considered complete when:
 
@@ -1474,6 +1656,29 @@ A Person 2 module is considered complete when:
 -   [x] TypeScript compilation succeeds
 -   [x] All current Person 2 automated tests pass
 
+## Person 3
+
+The Person 3 field-operations layer currently satisfies:
+
+-   [x] Scheduling service interface and deterministic generation rules
+-   [x] Visit ownership and state-transition rules
+-   [x] Required signature rule for visit completion
+-   [x] Ticket assignment and assigned-technician authorization
+-   [x] Ticket state-transition and message rules
+-   [x] SLA deadline, breach, and escalation service rules
+-   [x] SLA monitor orchestration and overlap protection
+-   [x] Thin controllers, route shells, and Zod validators
+-   [x] Shared audit/upload/error/response integration points
+-   [x] Person 3 automated tests
+
+The following items remain intentionally open:
+
+-   [ ] Person 1 Prisma models and migrations
+-   [ ] Production Prisma repository adapters
+-   [ ] Person 1 route registration
+-   [ ] Person 2 contract-activation and history integration
+-   [ ] Person 4 notification provider
+
 ------------------------------------------------------------------------
 
 # Reference Documents
@@ -1485,9 +1690,12 @@ This implementation is based on the project's:
 2.  **Backend Team Split**
 3.  **Whole System Architecture / Implementation Plan**
 
-Person 2's implementation specifically follows the responsibilities for
-**Clients, Contracts, Assets, Service Types, Renewals, Contract Status
-Jobs, and Renewal Reminder Jobs**.
+Person 2's implementation follows the responsibilities for **Clients,
+Contracts, Assets, Service Types, Renewals, Contract Status Jobs, and
+Renewal Reminder Jobs**.
+
+Person 3's implementation follows the responsibilities for **Scheduling,
+Visits, Tickets, Ticket Messages, SLA, and the SLA Monitor Job**.
 
 ------------------------------------------------------------------------
 
@@ -1525,3 +1733,32 @@ Background Automation:
 
 **Person 2 owns the Sales / Core Operations backend layer that connects
 clients, assets, contracts, and renewals.**
+
+# Person 3 Backend Summary
+
+``` text
+Contract / SLA
+      ↓
+Scheduling Service
+      ↓
+Scheduled Visits
+      ↓
+Assigned Technician
+      ↓
+Visit Evidence and Completion
+      ↓
+Tickets and Messages
+      ↓
+SLA Breach Monitoring
+      ↓
+Escalation / Notification Gateway
+```
+
+Person 3 owns the Field Operations / Technician Side of the AMC platform.
+The implementation provides strict service-layer rules for visit and ticket
+ownership, state transitions, signatures, SLA deadlines, and escalation.
+Controllers and route definitions are kept thin and ready for registration,
+but production persistence remains pending the required Person 1 schema.
+
+The optional Maps module is intentionally omitted until the team defines a
+provider and integration contract.
