@@ -242,20 +242,13 @@ export class PaymentService {
     return this.decorateClient(payment);
   }
 
-  /**
-   * Person 4 owned relation only. The Person 2 owned client is attached by
-   * `decorateClient()` through the integration port rather than a Prisma join.
-   */
+  // The client is attached separately by decorateClient() via the client port.
   private paymentInclude() {
     return {
       invoice: { select: { id: true, invoiceNumber: true, clientId: true } },
     };
   }
 
-  /**
-   * Re-attach the Person 2 owned client projection nested under `invoice`,
-   * preserving the existing payment response shape.
-   */
   private async decorateClient<
     T extends { invoice?: { id: string; clientId: string } | null }
   >(payment: T) {

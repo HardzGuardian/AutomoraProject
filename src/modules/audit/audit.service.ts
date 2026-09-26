@@ -4,18 +4,8 @@ import { AuditLogParams } from '../../types';
 import { PAGINATION } from '../../config/constants';
 import { Prisma } from '@prisma/client';
 
-/**
- * Audit service for logging and querying audit logs.
- * Logs are written within database transactions for consistency.
- */
 export class AuditService {
-  /**
-   * Create an audit log entry within a transaction.
-   * Use this method when you need audit logs to be part of a transaction.
-   *
-   * @param params - Audit log parameters
-   * @param tx - Prisma transaction client (optional)
-   */
+  /** Pass `tx` to write the entry inside the caller's transaction. */
   async log(params: AuditLogParams, tx?: Prisma.TransactionClient): Promise<void> {
     try {
       const client = tx || prisma;
@@ -31,27 +21,15 @@ export class AuditService {
         },
       });
     } catch (error) {
-      // Don't let audit logging failure break the main flow
+      // Audit logging must never break the request it is recording.
       logger.error('Failed to create audit log:', error);
     }
   }
 
-  /**
-   * Create an audit log entry outside of a transaction.
-   * Use this for standalone operations that don't need transactional guarantees.
-   *
-   * @param params - Audit log parameters
-   */
   async logSimple(params: AuditLogParams): Promise<void> {
     await this.log(params);
   }
 
-  /**
-   * List audit logs with pagination and filters.
-   *
-   * @param query - Query parameters
-   * @returns Paginated audit logs
-   */
   async list(query: {
     page?: number;
     limit?: number;
@@ -73,7 +51,6 @@ export class AuditService {
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
     const where: Prisma.AuditLogWhereInput = {};
 
     if (action) {
@@ -98,7 +75,6 @@ export class AuditService {
       }
     }
 
-    // Get logs and total count
     const [logs, total] = await Promise.all([
       prisma.auditLog.findMany({
         where,
@@ -130,12 +106,6 @@ export class AuditService {
     };
   }
 
-  /**
-   * Get audit log by ID.
-   *
-   * @param id - Audit log ID
-   * @returns Audit log with user info
-   */
   async getById(id: string) {
     const log = await prisma.auditLog.findUnique({
       where: { id },
@@ -158,27 +128,10 @@ export class AuditService {
     return log;
   }
 
-  /**
-   * Get audit logs for a specific user.
-   *
-   * @param userId - User ID
-   * @param page - Page number
-   * @param limit - Items per page
-   * @returns Paginated audit logs for the user
-   */
   async getByUserId(userId: string, page: number = 1, limit: number = 20) {
     return this.list({ page, limit, userId });
   }
 
-  /**
-   * Get audit logs for a specific entity.
-   *
-   * @param entity - Entity type
-   * @param entityId - Entity ID
-   * @param page - Page number
-   * @param limit - Items per page
-   * @returns Paginated audit logs for the entity
-   */
   async getByEntity(entity: string, entityId: string, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
 

@@ -1,15 +1,9 @@
-// ===========================================
-// APPLICATION CONSTANTS
-// ===========================================
-
-// Pagination defaults
 export const PAGINATION = {
   DEFAULT_PAGE: 1,
   DEFAULT_LIMIT: 10,
   MAX_LIMIT: 100,
 } as const;
 
-// User roles
 export const USER_ROLES = {
   ADMIN: 'ADMIN',
   MANAGER: 'MANAGER',
@@ -18,7 +12,7 @@ export const USER_ROLES = {
   CUSTOMER: 'CUSTOMER',
 } as const;
 
-// Role hierarchy (for authorization)
+// Higher number = more privileges.
 export const ROLE_HIERARCHY: Record<string, number> = {
   CUSTOMER: 0,
   TECHNICIAN: 1,
@@ -27,7 +21,6 @@ export const ROLE_HIERARCHY: Record<string, number> = {
   ADMIN: 4,
 } as const;
 
-// Audit actions
 export const AUDIT_ACTIONS = {
   // Authentication
   LOGIN: 'LOGIN',
@@ -54,7 +47,7 @@ export const AUDIT_ACTIONS = {
   UPDATE: 'UPDATE',
   DELETE: 'DELETE',
 
-  // Person 2 â€” AMC management
+  // Clients, contracts, assets and renewals
   CLIENT_CREATED: 'CLIENT_CREATED',
   CLIENT_UPDATED: 'CLIENT_UPDATED',
   CLIENT_DELETED: 'CLIENT_DELETED',
@@ -86,7 +79,7 @@ export const AUDIT_ACTIONS = {
   RENEWAL_FOLLOW_UP: 'RENEWAL_FOLLOW_UP',
   RENEWAL_OUTCOME: 'RENEWAL_OUTCOME',
 
-  // Person 4 â€” Finance
+  // Finance and notifications
   INVOICE_CREATED: 'INVOICE_CREATED',
   INVOICE_UPDATED: 'INVOICE_UPDATED',
   INVOICE_ISSUED: 'INVOICE_ISSUED',
@@ -102,7 +95,6 @@ export const AUDIT_ACTIONS = {
   JOB_EXECUTED: 'JOB_EXECUTED',
 } as const;
 
-// Audit entities
 export const AUDIT_ENTITIES = {
   USER: 'User',
   REFRESH_TOKEN: 'RefreshToken',
@@ -125,7 +117,6 @@ export const AUDIT_ENTITIES = {
   NOTIFICATION: 'NotificationLog',
 } as const;
 
-// HTTP status codes
 export const HTTP_STATUS = {
   OK: 200,
   CREATED: 201,
@@ -141,7 +132,6 @@ export const HTTP_STATUS = {
   INTERNAL_SERVER_ERROR: 500,
 } as const;
 
-// Error codes
 export const ERROR_CODES = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   AUTHENTICATION_ERROR: 'AUTHENTICATION_ERROR',
@@ -152,7 +142,6 @@ export const ERROR_CODES = {
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
 
-// File upload
 export const UPLOAD = {
   ALLOWED_MIME_TYPES: [
     'image/jpeg',
@@ -165,26 +154,20 @@ export const UPLOAD = {
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   ],
-  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
+  MAX_FILE_SIZE: 10 * 1024 * 1024,
   STORAGE_PATH: './uploads',
 } as const;
 
-// JWT
 export const JWT = {
   ACCESS_TOKEN_EXPIRY: '15m',
   REFRESH_TOKEN_EXPIRY: '7d',
   ALGORITHM: 'HS256',
 } as const;
 
-// Regex patterns
 export const PATTERNS = {
   UUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 } as const;
-
-// ===========================================
-// PERSON 2 â€” CONTRACT STATUS / REMINDERS
-// ===========================================
 
 export const CONTRACT_STATUS = {
   EXPIRING_SOON_DAYS: 30,
@@ -196,10 +179,6 @@ export const REMINDER_TYPES = {
   SIXTY_DAY: '60_DAY',
   NINETY_DAY: '90_DAY',
 } as const;
-
-// ===========================================
-// PERSON 4 â€” FINANCE / NOTIFICATION CONSTANTS
-// ===========================================
 
 export const INVOICE_STATUS = {
   DRAFT: 'DRAFT',

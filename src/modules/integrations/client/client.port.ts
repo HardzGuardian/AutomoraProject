@@ -10,13 +10,8 @@ export interface ClientSnapshot {
 
 export interface ClientReadPort {
   getById(id: string): Promise<ClientSnapshot | null>;
-  /**
-   * Batch lookup keyed by client id. Used by reports and list endpoints so
-   * Person 4 never needs a direct join against the Person 2 owned `clients`
-   * table and never issues an N+1 query.
-   */
   getByIds(ids: string[]): Promise<Map<string, ClientSnapshot>>;
-  /** Count of non-deleted clients, for the Person 4 dashboard. */
+  /** Excludes soft-deleted clients. */
   countActive(): Promise<number>;
 }
 
@@ -29,12 +24,9 @@ const CLIENT_SELECT = {
 } as const;
 
 /**
- * Read-only compatibility port for the Person 2 client domain. It is kept
- * outside Person 4 business logic so the owning client service can replace it.
- *
- * Person 4 services must depend on `ClientReadPort` and must never query
- * `prisma.client` directly. This adapter is the single sanctioned place where
- * a Person 2 table is read on the Person 4 branch.
+ * The only place outside the client module allowed to read the clients table
+ * (enforced by tests/architecture.test.ts). Swap this for the client module's
+ * service once it is merged.
  */
 export class PrismaClientReadAdapter implements ClientReadPort {
   async getById(id: string): Promise<ClientSnapshot | null> {

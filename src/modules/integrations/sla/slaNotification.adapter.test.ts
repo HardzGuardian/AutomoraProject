@@ -18,11 +18,9 @@ function harness() {
 }
 
 describe('SlaNotificationAdapter', () => {
-  it('satisfies the Person 3 gateway shape', () => {
+  it('satisfies the SLA notification gateway shape', () => {
     const { adapter } = harness();
 
-    // Person 3 constructs: new SlaMonitorJob(slaService, gateway)
-    // where gateway.send(notification: SlaBreachNotification): Promise<void>
     const gateway: {
       send(notification: SlaBreachNotification): Promise<void>;
     } = adapter;
@@ -45,7 +43,7 @@ describe('SlaNotificationAdapter', () => {
     });
   });
 
-  it('resolves to void so Person 3 can await it', async () => {
+  it('resolves to void so the SLA job can await it', async () => {
     const { adapter } = harness();
     await expect(adapter.send(breach)).resolves.toBeUndefined();
   });
@@ -56,7 +54,6 @@ describe('SlaNotificationAdapter', () => {
       { sendSlaBreach } as unknown as NotificationService
     );
 
-    // Person 3 counts this in its `errors` tally rather than crashing the job.
     await expect(adapter.send(breach)).rejects.toThrow('send failed');
   });
 

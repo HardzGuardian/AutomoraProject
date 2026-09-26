@@ -1,10 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
 
-/**
- * Prisma client singleton instance.
- * Reuses the same connection across the application.
- */
 const prisma = new PrismaClient({
   log: [
     { emit: 'event', level: 'query' },
@@ -13,7 +9,6 @@ const prisma = new PrismaClient({
   ],
 });
 
-// Log queries in development
 if (process.env.NODE_ENV === 'development') {
   prisma.$on('query', (e) => {
     logger.debug('Query: ' + e.query);
@@ -21,27 +16,20 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-// Log errors
 prisma.$on('error', (e) => {
   logger.error('Prisma error:', e);
 });
 
-/**
- * Connect to the database.
- */
 export async function connectDatabase(): Promise<void> {
   try {
     await prisma.$connect();
-    logger.info('✅ Database connected successfully');
+    logger.info('Database connected');
   } catch (error) {
-    logger.error('❌ Database connection failed:', error);
+    logger.error('Database connection failed:', error);
     throw error;
   }
 }
 
-/**
- * Disconnect from the database.
- */
 export async function disconnectDatabase(): Promise<void> {
   try {
     await prisma.$disconnect();
@@ -51,9 +39,6 @@ export async function disconnectDatabase(): Promise<void> {
   }
 }
 
-/**
- * Check database health.
- */
 export async function checkDatabaseHealth(): Promise<boolean> {
   try {
     await prisma.$queryRaw`SELECT 1`;

@@ -16,15 +16,6 @@ import { UserRole } from '../../types';
 
 const router = Router();
 
-// ===========================================
-// ADMIN ROUTES
-// ===========================================
-
-/**
- * @route   GET /users
- * @desc    List all users with pagination and filters
- * @access  Admin, Manager
- */
 router.get(
   '/',
   auth,
@@ -33,11 +24,6 @@ router.get(
   asyncHandler(userController.list)
 );
 
-/**
- * @route   GET /users/:id
- * @desc    Get user by ID
- * @access  Admin
- */
 router.get(
   '/:id',
   auth,
@@ -46,11 +32,6 @@ router.get(
   asyncHandler(userController.getById)
 );
 
-/**
- * @route   POST /users
- * @desc    Create new user
- * @access  Admin
- */
 router.post(
   '/',
   auth,
@@ -59,11 +40,6 @@ router.post(
   asyncHandler(userController.create)
 );
 
-/**
- * @route   PATCH /users/:id
- * @desc    Update user
- * @access  Admin
- */
 router.patch(
   '/:id',
   auth,
@@ -73,11 +49,6 @@ router.patch(
   asyncHandler(userController.update)
 );
 
-/**
- * @route   PATCH /users/:id/deactivate
- * @desc    Deactivate user
- * @access  Admin
- */
 router.patch(
   '/:id/deactivate',
   auth,
@@ -86,11 +57,6 @@ router.patch(
   asyncHandler(userController.deactivate)
 );
 
-/**
- * @route   PATCH /users/:id/activate
- * @desc    Activate user
- * @access  Admin
- */
 router.patch(
   '/:id/activate',
   auth,
@@ -99,11 +65,6 @@ router.patch(
   asyncHandler(userController.activate)
 );
 
-/**
- * @route   PATCH /users/:id/role
- * @desc    Change user role
- * @access  Admin
- */
 router.patch(
   '/:id/role',
   auth,
@@ -113,26 +74,12 @@ router.patch(
   asyncHandler(userController.changeRole)
 );
 
-// ===========================================
-// SELF ROUTES
-// ===========================================
-
-/**
- * @route   GET /users/me
- * @desc    Get own profile
- * @access  Private (any authenticated user)
- */
 router.get(
   '/me/profile',
   auth,
   asyncHandler(userController.getMe)
 );
 
-/**
- * @route   PATCH /users/me
- * @desc    Update own profile
- * @access  Private (any authenticated user)
- */
 router.patch(
   '/me/profile',
   auth,

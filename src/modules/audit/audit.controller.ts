@@ -4,10 +4,6 @@ import { ResponseHelper } from '../../utils/response';
 import { ApiError } from '../../utils/ApiError';
 
 export class AuditController {
-  /**
-   * GET /audit
-   * List audit logs with pagination and filters
-   */
   async list(
     req: Request,
     res: Response,
@@ -40,10 +36,6 @@ export class AuditController {
     }
   }
 
-  /**
-   * GET /audit/:id
-   * Get audit log by ID
-   */
   async getById(
     req: Request,
     res: Response,
@@ -63,10 +55,6 @@ export class AuditController {
     }
   }
 
-  /**
-   * GET /audit/user/:userId
-   * Get audit logs for a specific user
-   */
   async getByUserId(
     req: Request,
     res: Response,
@@ -88,10 +76,6 @@ export class AuditController {
     }
   }
 
-  /**
-   * GET /audit/entity/:entity/:entityId
-   * Get audit logs for a specific entity
-   */
   async getByEntity(
     req: Request,
     res: Response,

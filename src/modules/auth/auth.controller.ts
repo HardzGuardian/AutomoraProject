@@ -10,9 +10,6 @@ import {
 } from './auth.validator';
 
 export class AuthController {
-  /**
-   * POST /auth/register
-   */
   async register(
     req: Request,
     res: Response,
@@ -27,9 +24,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /auth/login
-   */
   async login(
     req: Request,
     res: Response,
@@ -46,9 +40,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /auth/refresh
-   */
   async refresh(
     req: Request,
     res: Response,
@@ -63,9 +54,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /auth/logout
-   */
   async logout(
     req: Request,
     res: Response,
@@ -80,9 +68,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * GET /auth/me
-   */
   async me(
     req: Request,
     res: Response,
@@ -100,9 +85,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * PATCH /auth/change-password
-   */
   async changePassword(
     req: Request,
     res: Response,

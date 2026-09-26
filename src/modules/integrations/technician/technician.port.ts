@@ -13,13 +13,6 @@ export interface TechnicianContactPort {
   getEmailFor(id: string): Promise<string | null>;
 }
 
-/**
- * Read-only port for notifying an assigned technician.
- *
- * The technician record is a Person 1 foundation `User` row. Person 4 never
- * queries it directly from a service — only from this adapter, matching the
- * rule applied to the Person 2 client/contract ports.
- */
 export class PrismaTechnicianContactAdapter implements TechnicianContactPort {
   async getById(id: string): Promise<TechnicianContactSnapshot | null> {
     const user = await prisma.user.findFirst({

@@ -13,11 +13,6 @@ import {
 
 const router = Router();
 
-/**
- * @route   POST /auth/register
- * @desc    Register a new user
- * @access  Public
- */
 router.post(
   '/register',
   authRateLimit,
@@ -25,11 +20,6 @@ router.post(
   asyncHandler(authController.register)
 );
 
-/**
- * @route   POST /auth/login
- * @desc    Login user and return tokens
- * @access  Public
- */
 router.post(
   '/login',
   authRateLimit,
@@ -37,44 +27,24 @@ router.post(
   asyncHandler(authController.login)
 );
 
-/**
- * @route   POST /auth/refresh
- * @desc    Refresh access token
- * @access  Public
- */
 router.post(
   '/refresh',
   validate(refreshTokenSchema),
   asyncHandler(authController.refresh)
 );
 
-/**
- * @route   POST /auth/logout
- * @desc    Logout user
- * @access  Private
- */
 router.post(
   '/logout',
   auth,
   asyncHandler(authController.logout)
 );
 
-/**
- * @route   GET /auth/me
- * @desc    Get current user profile
- * @access  Private
- */
 router.get(
   '/me',
   auth,
   asyncHandler(authController.me)
 );
 
-/**
- * @route   PATCH /auth/change-password
- * @desc    Change user password
- * @access  Private
- */
 router.patch(
   '/change-password',
   auth,

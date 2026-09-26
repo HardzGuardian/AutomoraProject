@@ -4,17 +4,12 @@ import { logger } from '../utils/logger';
 import { env } from '../config/env';
 import { Prisma } from '@prisma/client';
 
-/**
- * Global error handling middleware.
- * Catches all errors and sends standardized response.
- */
 export const errorHandler = (
   err: Error,
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
-  // Log the error
   logger.error('Error:', {
     message: err.message,
     stack: err.stack,
@@ -22,7 +17,6 @@ export const errorHandler = (
     method: req.method,
   });
 
-  // Handle ApiError (operational errors)
   if (err instanceof ApiError) {
     res.status(err.statusCode).json({
       success: false,
@@ -34,13 +28,11 @@ export const errorHandler = (
     return;
   }
 
-  // Handle Prisma errors
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     handlePrismaError(err, res);
     return;
   }
 
-  // Handle Prisma validation errors
   if (err instanceof Prisma.PrismaClientValidationError) {
     res.status(400).json({
       success: false,
@@ -52,7 +44,7 @@ export const errorHandler = (
     return;
   }
 
-  // Handle unknown errors
+  // Internal details are only exposed in development.
   res.status(500).json({
     success: false,
     error: {
@@ -65,9 +57,6 @@ export const errorHandler = (
   });
 };
 
-/**
- * Handle Prisma specific errors.
- */
 function handlePrismaError(
   err: Prisma.PrismaClientKnownRequestError,
   res: Response
@@ -86,7 +75,7 @@ function handlePrismaError(
       break;
     }
     case 'P2025': {
-      // Record not found
+      // Record to update or delete does not exist
       res.status(404).json({
         success: false,
         error: {

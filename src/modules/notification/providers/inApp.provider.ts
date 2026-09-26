@@ -5,18 +5,8 @@ import {
 } from '../notification.types';
 import { NotificationProvider } from './notification.provider';
 
-/**
- * In-app notification channel.
- *
- * Person 4 has no separate in-app inbox table. The durable in-app record is the
- * `NotificationLog` row that `NotificationService.log()` persists for every
- * attempt, so reporting SENT here is truthful: nothing is dispatched to an
- * external service, and nothing is claimed to have been.
- *
- * This exists because `notification.validator.ts` already accepts `IN_APP`,
- * which previously had no registered provider and therefore always returned
- * FAILED / HTTP 502.
- */
+// There is no separate inbox table: the NotificationLog row written for every
+// attempt is the in-app notification, so SENT is accurate here.
 export class InAppNotificationProvider implements NotificationProvider {
   readonly channel = 'IN_APP' as const;
   readonly name = 'in-app-log';

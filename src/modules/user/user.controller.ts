@@ -11,10 +11,6 @@ import {
 } from './user.validator';
 
 export class UserController {
-  /**
-   * GET /users
-   * List all users (admin/manager)
-   */
   async list(
     req: Request,
     res: Response,
@@ -29,10 +25,6 @@ export class UserController {
     }
   }
 
-  /**
-   * GET /users/:id
-   * Get user by ID (admin)
-   */
   async getById(
     req: Request,
     res: Response,
@@ -47,10 +39,6 @@ export class UserController {
     }
   }
 
-  /**
-   * GET /users/me
-   * Get own profile
-   */
   async getMe(
     req: Request,
     res: Response,
@@ -68,10 +56,6 @@ export class UserController {
     }
   }
 
-  /**
-   * POST /users
-   * Create new user (admin)
-   */
   async create(
     req: Request,
     res: Response,
@@ -86,10 +70,6 @@ export class UserController {
     }
   }
 
-  /**
-   * PATCH /users/:id
-   * Update user (admin)
-   */
   async update(
     req: Request,
     res: Response,
@@ -105,10 +85,6 @@ export class UserController {
     }
   }
 
-  /**
-   * PATCH /users/me
-   * Update own profile
-   */
   async updateProfile(
     req: Request,
     res: Response,
@@ -127,10 +103,6 @@ export class UserController {
     }
   }
 
-  /**
-   * PATCH /users/:id/deactivate
-   * Deactivate user (admin)
-   */
   async deactivate(
     req: Request,
     res: Response,
@@ -145,10 +117,6 @@ export class UserController {
     }
   }
 
-  /**
-   * PATCH /users/:id/activate
-   * Activate user (admin)
-   */
   async activate(
     req: Request,
     res: Response,
@@ -163,10 +131,6 @@ export class UserController {
     }
   }
 
-  /**
-   * PATCH /users/:id/role
-   * Change user role (admin)
-   */
   async changeRole(
     req: Request,
     res: Response,

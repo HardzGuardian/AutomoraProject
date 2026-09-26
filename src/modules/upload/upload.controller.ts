@@ -5,10 +5,6 @@ import { ApiError } from '../../utils/ApiError';
 import path from 'path';
 
 export class UploadController {
-  /**
-   * POST /uploads
-   * Upload a file
-   */
   async upload(
     req: Request,
     res: Response,
@@ -31,10 +27,6 @@ export class UploadController {
     }
   }
 
-  /**
-   * GET /uploads/:id
-   * Get file metadata
-   */
   async getById(
     req: Request,
     res: Response,
@@ -49,10 +41,6 @@ export class UploadController {
     }
   }
 
-  /**
-   * GET /uploads/:id/download
-   * Download a file
-   */
   async download(
     req: Request,
     res: Response,
@@ -78,10 +66,6 @@ export class UploadController {
     }
   }
 
-  /**
-   * DELETE /uploads/:id
-   * Delete a file
-   */
   async delete(
     req: Request,
     res: Response,
@@ -103,10 +87,6 @@ export class UploadController {
     }
   }
 
-  /**
-   * GET /uploads/user/:userId
-   * List files uploaded by a user
-   */
   async listByUser(
     req: Request,
     res: Response,

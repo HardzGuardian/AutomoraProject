@@ -1,22 +1,5 @@
-/**
- * Rule 7 regression guard.
- *
- * Person 2's renewal reminder job (origin/Amar:src/jobs/renewalReminder.job.ts)
- * calls:
- *
- *   notificationService.sendRenewalReminder({
- *     contractId, contractNumber, clientName, clientEmail,
- *     endDate, reminderType, daysUntilExpiry
- *   })
- *
- * That job is a Person 2 file and is not present on this branch, so this test
- * pins the expected payload against Person 4's own service. If the
- * `RenewalReminderInput` shape or the emitted notification ever drifts, Person
- * 2's job breaks silently — this is the guard against that.
- *
- * It deliberately does NOT import the Person 2 job module, so the Person 4
- * branch keeps building and testing standalone.
- */
+// Pins the payload the contract module's renewal reminder job sends to
+// sendRenewalReminder(). If this shape changes, that job breaks silently.
 import { NotificationService } from '../modules/notification/notification.service';
 import { NotificationProvider } from '../modules/notification/providers/notification.provider';
 import { RenewalReminderInput } from '../modules/notification/notification.types';
@@ -39,7 +22,7 @@ jest.mock('../config/db', () => ({
   },
 }));
 
-const PERSON_2_CONTRACT_FIELDS = [
+const RENEWAL_REMINDER_FIELDS = [
   'contractId',
   'contractNumber',
   'clientName',
@@ -57,7 +40,7 @@ function emailProvider(): NotificationProvider {
   };
 }
 
-describe('Person 2 renewal reminder compatibility', () => {
+describe('renewal reminder job compatibility', () => {
   const params: RenewalReminderInput = {
     contractId: 'contract-1',
     contractNumber: 'AMC-1',
@@ -68,8 +51,8 @@ describe('Person 2 renewal reminder compatibility', () => {
     daysUntilExpiry: 30,
   };
 
-  it('accepts exactly the seven fields Person 2 sends', () => {
-    expect(Object.keys(params).sort()).toEqual([...PERSON_2_CONTRACT_FIELDS].sort());
+  it('accepts exactly the seven fields the renewal job sends', () => {
+    expect(Object.keys(params).sort()).toEqual([...RENEWAL_REMINDER_FIELDS].sort());
   });
 
   it('types endDate as a Date and reminderType as a string', () => {

@@ -22,13 +22,7 @@ export interface ContractSnapshot {
 
 export interface ContractReadPort {
   getById(id: string): Promise<ContractSnapshot | null>;
-  /**
-   * Batch lookup keyed by contract id. Used by reports so Person 4 never needs
-   * a direct join against the Person 2 owned `contracts` table and never
-   * issues an N+1 query.
-   */
   getByIds(ids: string[]): Promise<Map<string, ContractSnapshot>>;
-  /** Count contracts currently in the given status, for the Person 4 dashboard. */
   countByStatus(status: ContractSnapshot['status']): Promise<number>;
 }
 
@@ -53,14 +47,9 @@ const CONTRACT_SELECT = {
 } as const;
 
 /**
- * Read-only compatibility port for the Person 2 contract domain. The Person 4
- * branch does not contain Person 2's service module; this adapter is kept
- * outside Person 4 business logic and can be replaced by the owning
- * contractService when that branch is integrated.
- *
- * Person 4 services must depend on `ContractReadPort` and must never query
- * `prisma.contract` directly. This adapter is the single sanctioned place
- * where a Person 2 table is read on the Person 4 branch.
+ * The only place outside the contract module allowed to read the contracts
+ * table (enforced by tests/architecture.test.ts). Swap this for the contract
+ * module's service once it is merged.
  */
 export class PrismaContractReadAdapter implements ContractReadPort {
   async getById(id: string): Promise<ContractSnapshot | null> {

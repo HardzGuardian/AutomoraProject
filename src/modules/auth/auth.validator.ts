@@ -1,12 +1,5 @@
 import { z } from 'zod';
 
-// ===========================================
-// AUTH VALIDATORS
-// ===========================================
-
-/**
- * Register schema
- */
 export const registerSchema = z.object({
   email: z
     .string()
@@ -31,9 +24,6 @@ export const registerSchema = z.object({
     .trim(),
 });
 
-/**
- * Login schema
- */
 export const loginSchema = z.object({
   email: z
     .string()
@@ -45,18 +35,12 @@ export const loginSchema = z.object({
     .min(1, 'Password is required'),
 });
 
-/**
- * Refresh token schema
- */
 export const refreshTokenSchema = z.object({
   refreshToken: z
     .string()
     .min(1, 'Refresh token is required'),
 });
 
-/**
- * Change password schema
- */
 export const changePasswordSchema = z.object({
   currentPassword: z
     .string()
@@ -69,7 +53,6 @@ export const changePasswordSchema = z.object({
     .regex(/[0-9]/, 'New password must contain at least one number'),
 });
 
-// Export types
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;

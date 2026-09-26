@@ -72,7 +72,7 @@ describe('DashboardService', () => {
     expect(result.operational.available).toBe(false);
   });
 
-  it('reads Person 2 contract and client counts through the integration ports', async () => {
+  it('reads contract and client counts through the integration ports', async () => {
     const contracts = contractPort(5, 1);
     const clients = clientPort(7);
     const service = new DashboardService(database as never, contracts as never, clients as never);

@@ -122,7 +122,7 @@ describe('ReportService', () => {
     ]);
   });
 
-  it('does not query Person 2 tables directly', async () => {
+  it('does not query client or contract tables directly', async () => {
     const database = { payment: { findMany: jest.fn().mockResolvedValue([payment(10, 'client-1', 'contract-1')]) } };
     const contracts2 = contractPort();
     const clients2 = clientPort();
@@ -134,11 +134,11 @@ describe('ReportService', () => {
     expect(contracts2.getByIds).toHaveBeenCalledWith(['contract-1']);
   });
 
-  it('returns an honest unavailable result for absent Person 3 data', async () => {
+  it('reports field service data as unavailable', async () => {
     const report = await service([]).technicianPerformance({}, actor);
 
     expect(report.available).toBe(false);
-    expect(report.reason).toContain('Person 3');
+    expect(report.reason).toContain('not available');
   });
 
   it('rejects a technician role', async () => {

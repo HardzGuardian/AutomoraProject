@@ -216,12 +216,7 @@ export class InvoiceService {
     return this.getById(id, actor);
   }
 
-  /**
-   * Issued/partially-paid invoices that are past due and still carrying a
-   * balance. Owned here so the overdue invoice job never reaches into Person 4
-   * tables directly. Client contact details come from the Person 2 client
-   * integration port.
-   */
+  /** Issued or partially paid invoices past their due date with a balance still owed. */
   async listOverdueCandidates(): Promise<OverdueInvoiceCandidate[]> {
     const invoices = await this.database.invoice.findMany({
       where: {
@@ -257,11 +252,8 @@ export class InvoiceService {
     };
   }
 
-  /**
-   * Re-attach the Person 2 owned client/contract projections that the invoice
-   * API has always exposed, resolved through the integration ports instead of
-   * a Prisma join. The JSON response shape is unchanged.
-   */
+  // Client and contract are loaded through the integration ports rather than a
+  // Prisma include, because those tables belong to the client/contract modules.
   private async decorate<T extends { clientId: string; contractId: string | null }>(
     invoice: T
   ) {
@@ -288,10 +280,7 @@ export class InvoiceService {
     };
   }
 
-  /**
-   * Batch variant used by list() so a page of invoices costs two port lookups
-   * rather than one per row.
-   */
+  // Batched so a page of invoices costs two lookups instead of two per row.
   private async decorateMany<
     T extends { clientId: string; contractId: string | null }
   >(invoices: T[]) {

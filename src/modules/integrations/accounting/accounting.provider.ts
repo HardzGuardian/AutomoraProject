@@ -31,10 +31,7 @@ export interface AccountingProvider {
   syncPayment(input: AccountingPaymentInput): Promise<AccountingSyncResult>;
 }
 
-/**
- * Safe development adapter. It never claims that an external accounting
- * transaction occurred when no provider is configured.
- */
+// Used when no accounting provider is configured; never reports a sync as successful.
 export class UnconfiguredAccountingProvider implements AccountingProvider {
   readonly name = env.ACCOUNTING_PROVIDER_NAME;
 

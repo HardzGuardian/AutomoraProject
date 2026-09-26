@@ -1,10 +1,5 @@
-/**
- * De-duplication tests exercise the REAL persistence path: the mocked
- * NotificationLog store enforces the same compound unique constraint as
- * `prisma/schema.prisma` (@@unique([eventKey, channel, recipient])), so a
- * regression back to `create` fails these tests exactly as it would in
- * production.
- */
+// The mocked store enforces the same (eventKey, channel, recipient) unique
+// constraint as the real table, so switching log() back to create() fails here.
 jest.mock('../../config/db', () => {
   const store: Array<Record<string, unknown>> = [];
 
@@ -349,7 +344,7 @@ describe('NotificationService payment reminders', () => {
 });
 
 describe('NotificationService contract compatibility', () => {
-  it('preserves the Person 2 renewal reminder contract exactly', async () => {
+  it('preserves the renewal reminder payload exactly', async () => {
     const emailProvider = sentProvider();
     const service = new NotificationService({ EMAIL: emailProvider });
 
@@ -436,7 +431,7 @@ describe('NotificationService.sendSlaBreach', () => {
     );
   });
 
-  it('resolves to void, matching the Person 3 gateway contract', async () => {
+  it('resolves to void, matching the SLA gateway contract', async () => {
     const service = new NotificationService(
       { EMAIL: sentProvider() },
       technicianPort('tech@example.com') as never

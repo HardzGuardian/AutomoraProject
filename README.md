@@ -2,7 +2,7 @@
 
 A production-ready RESTful API backend built with Node.js, TypeScript, Express.js, PostgreSQL, and Prisma ORM.
 
-## 🚀 Features
+## Features
 
 - **Authentication & Authorization** - JWT-based auth with refresh token rotation
 - **User Management** - Full CRUD with role-based access control
@@ -12,13 +12,13 @@ A production-ready RESTful API backend built with Node.js, TypeScript, Express.j
 - **Error Handling** - Centralized error management
 - **Docker Support** - Containerized deployment
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Node.js 20+
 - PostgreSQL 16+
 - npm or yarn
 
-## 🛠️ Installation
+## Installation
 
 ### 1. Clone the repository
 
@@ -68,7 +68,7 @@ npm run seed
 npm run dev
 ```
 
-## 🐳 Docker
+## Docker
 
 ### Development
 
@@ -82,7 +82,7 @@ docker-compose up
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
-## 📚 API Documentation
+## API Documentation
 
 ### Base URL
 
@@ -139,7 +139,7 @@ Development: http://localhost:3000/api/v1
 |--------|----------|-------------|--------|
 | GET | /health | Health check | Public |
 
-## 🔐 Authentication
+## Authentication
 
 ### Login
 
@@ -172,7 +172,7 @@ Include the access token in the Authorization header:
 Authorization: Bearer <access_token>
 ```
 
-## 👥 Default Users
+## Default Users
 
 | Role | Email | Password |
 |------|-------|----------|
@@ -181,12 +181,13 @@ Authorization: Bearer <access_token>
 | Technician | tech@automora.com | Tech123! |
 | Customer | customer@automora.com | Customer123! |
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 automora-backend/
 ├── prisma/
-│   ├── schema.prisma        # Database schema
+│   ├── schema.prisma        # Generator and datasource
+│   ├── models/              # Models, one file per domain
 │   ├── migrations/          # Database migrations
 │   └── seed.ts              # Database seed
 ├── src/
@@ -239,52 +240,58 @@ automora-backend/
 ├── docker-compose.yml       # Docker compose
 ├── Dockerfile               # Docker build
 ├── package.json             # Dependencies
-├── tsconfig.json            # TypeScript config
+├── prisma.config.ts         # Prisma CLI config
+├── tsconfig.json            # TypeScript config (type checking)
+├── tsconfig.build.json      # TypeScript config (production build)
 └── README.md                # Documentation
 ```
 
 ### Architecture
 
-The backend uses a **feature-first layout**. Application layers are organised
-*inside* each feature module under `src/modules/<feature>/`, not in separate
-top-level layer folders:
+Each feature lives in `src/modules/<feature>/`, with one file per layer:
 
 ```
 src/modules/<feature>/
-├── <feature>.routes.ts      # Express router
-├── <feature>.controller.ts  # Request handling
-├── <feature>.service.ts     # Business logic and persistence
+├── <feature>.routes.ts      # URL to controller mapping
+├── <feature>.controller.ts  # Request and response handling
+├── <feature>.service.ts     # Business logic and database access
 ├── <feature>.validator.ts   # Zod request validation
-├── <feature>.types.ts       # Feature-specific types
-├── <feature>.utils.ts       # Feature-specific helpers
-└── <feature>.*.test.ts      # Co-located unit tests
+└── <feature>.types.ts       # Feature types (where needed)
 ```
 
-Each feature module contains only the layers it actually needs. Shared,
-cross-cutting concerns are the only code hoisted out of the feature modules:
+- Shared code lives in `src/config`, `src/middleware`, `src/utils` and `src/types`.
+- Modules never query another module's tables directly. Cross-module reads go
+  through `src/modules/integrations/`, and `tests/architecture.test.ts` enforces this.
+- Unit tests sit next to the code they test (`*.test.ts`).
 
-| Concern | Location |
-|---------|----------|
-| Shared configuration | `src/config/` |
-| Shared middleware | `src/middleware/` |
-| Shared type definitions | `src/types/` |
-| Shared utility functions | `src/utils/` |
-| Scheduled jobs | `src/jobs/` |
-| Database schema, migrations and seed | `prisma/` |
+## Database
 
-Notification providers stay with their feature in
-`src/modules/notification/providers/`. The Excel and PDF exporters stay in
-`src/modules/export/`, and the ports and providers used to read other people's
-tables stay in `src/modules/integrations/<concern>/` (`client/`, `contract/`,
-`technician/`, `accounting/`, `payment-gateway/`, `sla/`). These modules hold no
-router or controller of their own — `export/` and `integrations/` are consumed
-by the feature modules that need them.
+PostgreSQL with Prisma ORM. The schema is split by domain:
 
-Tests follow the existing project convention: unit tests are co-located beside
-the code they cover (`src/**/*.test.ts`), while repository-level tests such as
-the architecture guard live in `tests/`.
+```
+prisma/
+├── schema.prisma     # Generator and datasource only
+├── models/           # user, audit, upload, client, asset, service-type,
+│                     # contract, renewal, invoice, payment, notification
+├── migrations/       # Applied in order; never edit or delete
+└── seed.ts
+```
 
-## 🧪 Testing
+### Changing the schema
+
+1. Edit the relevant file in `prisma/models/`.
+2. Create a migration: `npx prisma migrate dev --name describe_the_change`
+3. Commit the updated model file and the new migration folder together.
+
+In production, apply migrations with `npm run migrate:prod`.
+
+### Rules
+
+- Never edit or delete a migration that has already been applied. Always add a new one.
+- Every relation is defined on both models.
+- Invoices and payments are never deleted. Cancel them with their `CANCELLED` status.
+
+## Testing
 
 ```bash
 # Run tests
@@ -297,19 +304,24 @@ npm run test:watch
 npm run test:coverage
 ```
 
-## 📝 Available Scripts
+## Available Scripts
 
 | Script | Description |
 |--------|-------------|
 | `npm run dev` | Start development server |
-| `npm run build` | Build for production |
+| `npm run build` | Build for production (`tsconfig.build.json`) |
 | `npm start` | Start production server |
+| `npm run typecheck` | Type-check the whole project |
+| `npm run migrate` | Create and apply a migration (development) |
+| `npm run migrate:prod` | Apply pending migrations (production) |
+| `npm run generate` | Regenerate the Prisma client |
+| `npm run studio` | Open Prisma Studio |
 | `npm run seed` | Seed database |
 | `npm test` | Run tests |
 | `npm run lint` | Run linter |
 | `npm run lint:fix` | Fix linting issues |
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -323,7 +335,7 @@ See `.env.example` for all available configuration options.
 - `PORT` - Server port (default: 3000)
 - `NODE_ENV` - Environment (development/production/test)
 
-## 🛡️ Security
+## Security
 
 - JWT-based authentication with refresh token rotation
 - Password hashing with bcrypt (12 rounds)
@@ -334,11 +346,24 @@ See `.env.example` for all available configuration options.
 - SQL injection protection (Prisma)
 - File upload validation
 
-## 📄 License
+## Changelog
+
+### 2026-09-26 — Database and project cleanup
+
+- **Prisma schema:** split into per-domain files under `prisma/models/`. Fixed five
+  relations that were missing their reverse side, which stopped `prisma generate` from running.
+- **Migrations:** added the missing client/contract migration, so the full chain now runs on
+  an empty database. Verified that the database matches the schema.
+- **Prisma config:** moved to `prisma.config.ts` (replaces the deprecated `package.json` block).
+- **Build:** added `tsconfig.build.json` so the build compiles only `src/` and leaves tests out.
+- **Code cleanup:** removed emoji and boilerplate comments; switched remaining `console` calls to the logger.
+- **Git:** `migration_lock.toml` is now committed; AI tool files are ignored.
+
+## License
 
 This project is licensed under the MIT License.
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -346,6 +371,6 @@ This project is licensed under the MIT License.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📞 Support
+## Support
 
 For support, email support@automora.com or open an issue on GitHub.

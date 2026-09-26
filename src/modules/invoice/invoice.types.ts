@@ -48,11 +48,6 @@ export interface InvoiceTotals {
   totalAmount: import('@prisma/client').Prisma.Decimal;
 }
 
-/**
- * Read model returned by `InvoiceService.listOverdueCandidates()` for the
- * overdue invoice job. Client contact details are resolved through the
- * Person 2 client integration port, so the job never queries Person 2 tables.
- */
 export interface OverdueInvoiceCandidate {
   id: string;
   invoiceNumber: string;

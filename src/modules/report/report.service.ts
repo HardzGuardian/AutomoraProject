@@ -91,13 +91,11 @@ export class ReportService {
     this.assertRole(actor);
     return {
       available: false,
-      reason: 'Person 3 scheduling, visit, ticket, and SLA integration is not available',
+      reason: 'Scheduling, visit, ticket and SLA data is not available yet',
       rows: [],
     };
   }
 
-// Cross-domain report joins are isolated in this read layer. Person 2/P3
-  // business services remain the source of truth for their write behavior.
   private async successfulPayments(period: ReportPeriod) {
     const payments = await this.database.payment.findMany({
       where: {
@@ -119,8 +117,7 @@ export class ReportService {
       },
     });
 
-    // Person 2 owned client/contract labels are resolved through the
-    // integration ports, batched to avoid an N+1 lookup.
+    // Batched through the ports to avoid one lookup per payment.
     const [clients, contracts] = await Promise.all([
       this.clients.getByIds(payments.map((payment) => payment.invoice.clientId)),
       this.contracts.getByIds(

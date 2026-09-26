@@ -31,10 +31,7 @@ export interface PaymentGatewayProvider {
   parseWebhookEvent(rawBody: Buffer): GatewayWebhookEvent;
 }
 
-/**
- * Replaceable local adapter. It supports generic signature verification and
- * event parsing, but does not pretend to contact a real gateway.
- */
+// Verifies and parses webhooks but never calls a real gateway. Replace when a provider is chosen.
 export class UnconfiguredPaymentGatewayProvider implements PaymentGatewayProvider {
   readonly name = env.PAYMENT_GATEWAY_NAME;
 

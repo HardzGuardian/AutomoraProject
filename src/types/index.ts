@@ -1,9 +1,5 @@
 export { Env } from '../config/env';
 
-// ===========================================
-// USER TYPES
-// ===========================================
-
 export type UserRole = 'ADMIN' | 'MANAGER' | 'SALES' | 'TECHNICIAN' | 'CUSTOMER';
 
 export interface UserPayload {
@@ -23,10 +19,6 @@ export interface UserProfile {
   createdAt: Date;
 }
 
-// ===========================================
-// JWT TYPES
-// ===========================================
-
 export interface JwtPayload {
   userId: string;
   email: string;
@@ -37,10 +29,6 @@ export interface TokenPair {
   accessToken: string;
   refreshToken: string;
 }
-
-// ===========================================
-// API TYPES
-// ===========================================
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -68,10 +56,6 @@ export interface PaginationQuery {
   limit?: number;
 }
 
-// ===========================================
-// AUDIT TYPES
-// ===========================================
-
 export interface AuditLogParams {
   userId?: string;
   action: string;
@@ -82,10 +66,6 @@ export interface AuditLogParams {
   userAgent?: string;
 }
 
-// ===========================================
-// UPLOAD TYPES
-// ===========================================
-
 export interface UploadResult {
   id: string;
   originalName: string;
@@ -95,10 +75,6 @@ export interface UploadResult {
   url: string;
 }
 
-// ===========================================
-// REQUEST TYPES
-// ===========================================
-
 export interface AuthenticatedRequest extends Express.Request {
   user: UserPayload;
   ip?: string;
@@ -107,10 +83,6 @@ export interface AuthenticatedRequest extends Express.Request {
     [key: string]: string | string[] | undefined;
   };
 }
-
-// ===========================================
-// SERVICE TYPES
-// ===========================================
 
 export interface CreateUserInput {
   email: string;

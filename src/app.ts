@@ -11,7 +11,6 @@ import { generalRateLimit } from './middleware/rateLimit.middleware';
 import { notFound } from './middleware/notFound.middleware';
 import { errorHandler } from './middleware/error.middleware';
 
-// Import routes
 import authRoutes from './modules/auth/auth.routes';
 import userRoutes from './modules/user/user.routes';
 import auditRoutes from './modules/audit/audit.routes';
@@ -22,17 +21,9 @@ import notificationRoutes from './modules/notification/notification.routes';
 import reportRoutes from './modules/report/report.routes';
 import dashboardRoutes from './modules/dashboard/dashboard.routes';
 
-// Create Express app
 const app = express();
 
-// ===========================================
-// SECURITY MIDDLEWARE
-// ===========================================
-
-// Set security HTTP headers
 app.use(helmet());
-
-// Enable CORS
 app.use(
   cors({
     origin: env.CORS_ORIGIN,
@@ -42,57 +33,26 @@ app.use(
   })
 );
 
-// ===========================================
-// PARSING MIDDLEWARE
-// ===========================================
-
-// Parse JSON bodies
 app.use(
   express.json({
     limit: '10mb',
+    // Payment gateway webhooks are verified against the exact raw bytes.
     verify: (req, _res, buffer) => {
       (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
     },
   })
 );
-
-// Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Parse cookies
 app.use(cookieParser());
-
-// ===========================================
-// COMPRESSION
-// ===========================================
-
 app.use(compression());
 
-// ===========================================
-// LOGGING
-// ===========================================
-
-// HTTP request logging
 if (env.NODE_ENV !== 'test') {
   app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 }
 
-// ===========================================
-// RATE LIMITING
-// ===========================================
-
 app.use(generalRateLimit);
 
-// ===========================================
-// STATIC FILES
-// ===========================================
-
-// Serve uploaded files
 app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
-
-// ===========================================
-// HEALTH CHECK
-// ===========================================
 
 app.get('/api/v1/health', (req, res) => {
   res.json({
@@ -102,10 +62,6 @@ app.get('/api/v1/health', (req, res) => {
     environment: env.NODE_ENV,
   });
 });
-
-// ===========================================
-// API ROUTES
-// ===========================================
 
 const apiRouter = express.Router();
 
@@ -121,14 +77,7 @@ apiRouter.use('/dashboard', dashboardRoutes);
 
 app.use('/api/v1', apiRouter);
 
-// ===========================================
-// ERROR HANDLING
-// ===========================================
-
-// 404 handler
 app.use(notFound);
-
-// Global error handler
 app.use(errorHandler);
 
 export default app;

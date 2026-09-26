@@ -36,7 +36,7 @@ export class UnavailableOperationalMetrics implements OperationalMetrics {
   async revenueByBranch(): Promise<UnavailableReport> {
     return {
       available: false,
-      reason: 'Person 3 branch integration is not available',
+      reason: 'Branch data is not available yet',
       rows: [],
     };
   }
@@ -44,7 +44,7 @@ export class UnavailableOperationalMetrics implements OperationalMetrics {
   async technicianPerformance(): Promise<UnavailableReport> {
     return {
       available: false,
-      reason: 'Person 3 technician/SLA integration is not available',
+      reason: 'Technician and SLA data is not available yet',
       rows: [],
     };
   }

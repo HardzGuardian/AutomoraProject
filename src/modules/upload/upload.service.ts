@@ -1,5 +1,6 @@
 import prisma from '../../config/db';
 import { ApiError } from '../../utils/ApiError';
+import { logger } from '../../utils/logger';
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from '../../config/constants';
 import { UploadResult } from '../../types';
 import fs from 'fs/promises';
@@ -7,15 +8,11 @@ import path from 'path';
 import { env } from '../../config/env';
 
 export class UploadService {
-  /**
-   * Save uploaded file to database and return metadata.
-   */
   async saveFile(file: Express.Multer.File, userId: string): Promise<UploadResult> {
     if (!file) {
       throw ApiError.badRequest('No file provided');
     }
 
-    // Create database record
     const uploadedFile = await prisma.uploadedFile.create({
       data: {
         originalName: file.originalname,
@@ -27,7 +24,6 @@ export class UploadService {
       },
     });
 
-    // Log audit
     await this.logAudit({
       userId,
       action: AUDIT_ACTIONS.FILE_UPLOADED,
@@ -50,9 +46,6 @@ export class UploadService {
     };
   }
 
-  /**
-   * Get file by ID.
-   */
   async getById(id: string) {
     const file = await prisma.uploadedFile.findUnique({
       where: { id },
@@ -75,10 +68,6 @@ export class UploadService {
     return file;
   }
 
-  /**
-   * Delete file by ID.
-   * Only the uploader or admin can delete files.
-   */
   async delete(id: string, userId: string, userRole: string): Promise<void> {
     const file = await prisma.uploadedFile.findUnique({
       where: { id },
@@ -88,24 +77,20 @@ export class UploadService {
       throw ApiError.notFound('File not found');
     }
 
-    // Check permission (only uploader or admin can delete)
     if (file.uploaderId !== userId && userRole !== 'ADMIN') {
       throw ApiError.forbidden('You can only delete your own files');
     }
 
-    // Delete file from disk
     try {
       await fs.unlink(file.path);
     } catch (error) {
-      // File might already be deleted from disk, continue with DB deletion
+      // The file may already be gone from disk; the database row is still removed.
     }
 
-    // Delete from database
     await prisma.uploadedFile.delete({
       where: { id },
     });
 
-    // Log audit
     await this.logAudit({
       userId,
       action: AUDIT_ACTIONS.FILE_DELETED,
@@ -118,9 +103,6 @@ export class UploadService {
     });
   }
 
-  /**
-   * Get file path for download.
-   */
   async getFilePath(id: string): Promise<{ path: string; filename: string; mimeType: string }> {
     const file = await prisma.uploadedFile.findUnique({
       where: { id },
@@ -137,9 +119,6 @@ export class UploadService {
     };
   }
 
-  /**
-   * List files uploaded by a user.
-   */
   async listByUser(userId: string, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
 
@@ -174,9 +153,6 @@ export class UploadService {
     };
   }
 
-  /**
-   * Log audit event.
-   */
   private async logAudit(params: {
     userId?: string;
     action: string;
@@ -195,7 +171,7 @@ export class UploadService {
         },
       });
     } catch (error) {
-      console.error('Failed to create audit log:', error);
+      logger.error('Failed to create audit log:', error);
     }
   }
 }

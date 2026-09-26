@@ -237,7 +237,6 @@ describe('PaymentService', () => {
     expect(harness.notifications.send).toHaveBeenCalledWith(
       expect.objectContaining({ recipient: 'client@example.com' })
     );
-    // The Person 2 owned client is still exposed on the response, under invoice.
     expect((result as unknown as { invoice: { client: unknown } }).invoice.client).toEqual({
       id: 'client-1',
       companyName: 'Client',

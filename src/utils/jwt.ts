@@ -3,17 +3,7 @@ import { env } from '../config/env';
 import { JwtPayload, TokenPair } from '../types';
 import { ApiError } from './ApiError';
 
-/**
- * JWT utility for token generation and verification.
- * Handles both access and refresh tokens.
- */
 export class JwtUtils {
-  /**
-   * Generate an access token.
-   *
-   * @param payload - Data to encode in the token
-   * @returns Signed JWT token
-   */
   static generateAccessToken(payload: JwtPayload): string {
     return jwt.sign(payload, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN,
@@ -21,12 +11,6 @@ export class JwtUtils {
     });
   }
 
-  /**
-   * Generate a refresh token.
-   *
-   * @param payload - Data to encode in the token
-   * @returns Signed JWT token
-   */
   static generateRefreshToken(payload: JwtPayload): string {
     return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
       expiresIn: env.JWT_REFRESH_EXPIRES_IN,
@@ -34,12 +18,6 @@ export class JwtUtils {
     });
   }
 
-  /**
-   * Generate both access and refresh tokens.
-   *
-   * @param payload - Data to encode in the tokens
-   * @returns Token pair containing access and refresh tokens
-   */
   static generateTokenPair(payload: JwtPayload): TokenPair {
     return {
       accessToken: this.generateAccessToken(payload),
@@ -47,13 +25,6 @@ export class JwtUtils {
     };
   }
 
-  /**
-   * Verify an access token.
-   *
-   * @param token - JWT token to verify
-   * @returns Decoded token payload
-   * @throws ApiError if token is invalid or expired
-   */
   static verifyAccessToken(token: string): JwtPayload {
     try {
       const decoded = jwt.verify(token, env.JWT_SECRET, {
@@ -68,13 +39,6 @@ export class JwtUtils {
     }
   }
 
-  /**
-   * Verify a refresh token.
-   *
-   * @param token - JWT token to verify
-   * @returns Decoded token payload
-   * @throws ApiError if token is invalid or expired
-   */
   static verifyRefreshToken(token: string): JwtPayload {
     try {
       const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET, {
@@ -89,12 +53,7 @@ export class JwtUtils {
     }
   }
 
-  /**
-   * Decode a token without verification (use with caution).
-   *
-   * @param token - JWT token to decode
-   * @returns Decoded token payload or null
-   */
+  /** Reads the payload without checking the signature. Never use it for auth decisions. */
   static decode(token: string): JwtPayload | null {
     try {
       return jwt.decode(token) as JwtPayload;

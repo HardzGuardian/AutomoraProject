@@ -105,18 +105,6 @@ export class NotificationService {
     return result;
   }
 
-  /**
-   * Person 3 SLA breach notification.
-   *
-   * Deliberately a NEW sibling method rather than a change to the generic
-   * `send()` signature: `send()` requires eventKey/channel/recipient/message,
-   * none of which Person 3's payload carries, so overloading it would either
-   * weaken the type for every existing caller or break at runtime.
-   *
-   * Returns `Promise<void>` so it satisfies Person 3's
-   * `SlaNotificationGateway` contract. De-duplication, persistence and audit
-   * are inherited by delegating to the existing `send()`.
-   */
   async sendSlaBreach(params: SlaBreachNotification): Promise<void> {
     const recipient = await this.technicians.getEmailFor(
       params.assignedTechnicianId
@@ -258,11 +246,8 @@ export class NotificationService {
   }
 
   async log(input: NotificationLogInput): Promise<void> {
-    // `NotificationLog` has a compound unique on (eventKey, channel, recipient).
-    // A plain `create` therefore collides whenever the same event is retried
-    // after a FAILED attempt, and the collision used to be swallowed — losing
-    // the retry outcome. An upsert keeps exactly one row per de-duplication
-    // key and always records the latest attempt.
+    // Upsert on the (eventKey, channel, recipient) unique key so a retry after a
+    // failed attempt overwrites that row instead of violating the constraint.
     try {
       await prisma.notificationLog.upsert({
         where: {

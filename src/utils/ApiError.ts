@@ -15,11 +15,9 @@ export class ApiError extends Error {
     this.isOperational = isOperational;
     this.name = 'ApiError';
 
-    // Maintains proper stack trace in V8 environments
     Error.captureStackTrace(this, this.constructor);
   }
 
-  // Static factory methods for common errors
   static badRequest(message: string, details?: unknown): ApiError {
     return new ApiError(400, message, details);
   }

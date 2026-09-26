@@ -409,25 +409,25 @@ CUSTOMER (Basic Access)
 | Operation | Admin | Manager | Technician | Customer |
 |-----------|-------|---------|------------|----------|
 | **Authentication** |
-| Login | ✅ | ✅ | ✅ | ✅ |
-| Register | ✅ | ✅ | ✅ | ✅ |
-| Refresh Token | ✅ | ✅ | ✅ | ✅ |
-| Change Password | ✅ | ✅ | ✅ | ✅ |
+| Login | Yes | Yes | Yes | Yes |
+| Register | Yes | Yes | Yes | Yes |
+| Refresh Token | Yes | Yes | Yes | Yes |
+| Change Password | Yes | Yes | Yes | Yes |
 | **Users** |
-| List Users | ✅ | ✅ | ❌ | ❌ |
-| View Any User | ✅ | ✅ | ❌ | ❌ |
-| Create User | ✅ | ❌ | ❌ | ❌ |
-| Update User | ✅ | ❌ | ❌ | ❌ |
-| Deactivate User | ✅ | ❌ | ❌ | ❌ |
-| Change User Role | ✅ | ❌ | ❌ | ❌ |
-| View Own Profile | ✅ | ✅ | ✅ | ✅ |
-| Update Own Profile | ✅ | ✅ | ✅ | ✅ |
+| List Users | Yes | Yes | No | No |
+| View Any User | Yes | Yes | No | No |
+| Create User | Yes | No | No | No |
+| Update User | Yes | No | No | No |
+| Deactivate User | Yes | No | No | No |
+| Change User Role | Yes | No | No | No |
+| View Own Profile | Yes | Yes | Yes | Yes |
+| Update Own Profile | Yes | Yes | Yes | Yes |
 | **Audit** |
-| View Audit Logs | ✅ | ✅ | ❌ | ❌ |
+| View Audit Logs | Yes | Yes | No | No |
 | **Files** |
-| Upload File | ✅ | ✅ | ✅ | ✅ |
-| Delete Own File | ✅ | ✅ | ✅ | ✅ |
-| Delete Any File | ✅ | ❌ | ❌ | ❌ |
+| Upload File | Yes | Yes | Yes | Yes |
+| Delete Own File | Yes | Yes | Yes | Yes |
+| Delete Any File | Yes | No | No | No |
 
 ---
 

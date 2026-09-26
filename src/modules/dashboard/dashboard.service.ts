@@ -14,9 +14,6 @@ export class DashboardService {
     private readonly clients: ClientReadPort = clientReadPort
   ) {}
 
-// Dashboard cross-domain counts are read-only aggregates. They do not
-  // duplicate Person 2/P3 business rules. Person 2 owned contract and client
-  // counts are read through integration ports, never queried directly.
   async getSummary(actor: DashboardActor): Promise<DashboardSummary> {
     if (!DASHBOARD_ROLES.has(actor.role)) {
       throw ApiError.forbidden('Dashboard access is not permitted for this role');
@@ -58,7 +55,7 @@ export class DashboardService {
       clients: { activeCount: activeClients },
       operational: {
         available: false,
-        reason: 'Person 3 scheduling, visit, ticket, and SLA integration is not available',
+        reason: 'Scheduling, visit, ticket and SLA data is not available yet',
       },
     };
   }

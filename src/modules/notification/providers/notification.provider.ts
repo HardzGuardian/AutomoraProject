@@ -26,15 +26,8 @@ export function providerFor(
   return providers[channel];
 }
 
-/**
- * Builds the provider map, wiring the existing `NOTIFICATION_FROM_EMAIL` and
- * `NOTIFICATION_FROM_PHONE` environment variables into the sender identity.
- *
- * These variables only supply the *identity* used for attribution. No external
- * transport is contacted and no delivery is simulated: without a configured
- * transport the development providers keep reporting SKIPPED, which is the
- * truthful outcome. Adding a real transport is a separate, explicit change.
- */
+// The development providers do not deliver anything; they report SKIPPED
+// until a real email/SMS transport is wired in.
 export function buildDefaultProviders(): NotificationProviderMap {
   return {
     EMAIL: new DevelopmentEmailProvider(env.NOTIFICATION_FROM_EMAIL),

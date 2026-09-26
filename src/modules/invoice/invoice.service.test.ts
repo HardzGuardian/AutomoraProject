@@ -154,7 +154,7 @@ describe('InvoiceService', () => {
     expect(invoice.contract).toBeNull();
   });
 
-  it('does not join Person 2 tables in the Prisma query', async () => {
+  it('does not join client or contract tables in the Prisma query', async () => {
     database.invoice.findUnique.mockResolvedValue(invoiceRecord());
 
     await build().getById('invoice-1');

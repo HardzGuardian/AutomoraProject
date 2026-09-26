@@ -10,11 +10,7 @@ import { AUDIT_ACTIONS, AUDIT_ENTITIES } from '../../config/constants';
 import { env } from '../../config/env';
 
 export class AuthService {
-  /**
-   * Register a new user.
-   */
   async register(data: RegisterInput) {
-    // Check if email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -23,10 +19,8 @@ export class AuthService {
       throw ApiError.conflict('Email already registered');
     }
 
-    // Hash password
     const hashedPassword = await HashUtils.hash(data.password);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         email: data.email,
@@ -44,7 +38,6 @@ export class AuthService {
       },
     });
 
-    // Log audit
     await this.logAudit({
       action: AUDIT_ACTIONS.USER_CREATED,
       entity: AUDIT_ENTITIES.USER,
@@ -55,17 +48,12 @@ export class AuthService {
     return user;
   }
 
-  /**
-   * Login user and return tokens.
-   */
   async login(data: LoginInput, ipAddress?: string, userAgent?: string) {
-    // Find user by email
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     if (!user) {
-      // Log failed attempt
       await this.logAudit({
         action: AUDIT_ACTIONS.LOGIN_FAILED,
         entity: AUDIT_ENTITIES.USER,
@@ -76,7 +64,6 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
-    // Check if user is active
     if (!user.isActive) {
       await this.logAudit({
         action: AUDIT_ACTIONS.LOGIN_FAILED,
@@ -89,7 +76,6 @@ export class AuthService {
       throw ApiError.unauthorized('Account is deactivated');
     }
 
-    // Verify password
     const isPasswordValid = await HashUtils.compare(data.password, user.password);
     if (!isPasswordValid) {
       await this.logAudit({
@@ -104,7 +90,6 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
-    // Generate tokens
     const tokenPayload: UserPayload = {
       id: user.id,
       email: user.email,
@@ -113,8 +98,6 @@ export class AuthService {
 
     const tokens = JwtUtils.generateTokenPair(tokenPayload);
 
-    // Store refresh token in database
-    const decodedRefreshToken = JwtUtils.decode(tokens.refreshToken);
     await prisma.refreshToken.create({
       data: {
         token: tokens.refreshToken,
@@ -123,7 +106,6 @@ export class AuthService {
       },
     });
 
-    // Log successful login
     await this.logAudit({
       userId: user.id,
       action: AUDIT_ACTIONS.LOGIN,
@@ -136,14 +118,9 @@ export class AuthService {
     return tokens;
   }
 
-  /**
-   * Refresh access token using refresh token.
-   */
   async refreshToken(refreshToken: string): Promise<TokenPair> {
-    // Verify refresh token
-    const decoded = JwtUtils.verifyRefreshToken(refreshToken);
+    JwtUtils.verifyRefreshToken(refreshToken);
 
-    // Find refresh token in database
     const storedToken = await prisma.refreshToken.findUnique({
       where: { token: refreshToken },
       include: { user: true },
@@ -153,24 +130,21 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid refresh token');
     }
 
-    // Check if token is revoked
+    // A revoked token being presented again means it was likely stolen,
+    // so every session for this user is invalidated.
     if (storedToken.revokedAt) {
-      // Token reuse detected - revoke all user tokens
       await this.revokeAllUserTokens(storedToken.userId);
       throw ApiError.unauthorized('Token revoked - all sessions invalidated');
     }
 
-    // Check if token is expired
     if (DateHelpers.isExpired(storedToken.expiresAt)) {
       throw ApiError.unauthorized('Refresh token expired');
     }
 
-    // Check if user is still active
     if (!storedToken.user.isActive) {
       throw ApiError.unauthorized('Account is deactivated');
     }
 
-    // Generate new tokens
     const tokenPayload: UserPayload = {
       id: storedToken.user.id,
       email: storedToken.user.email,
@@ -179,14 +153,11 @@ export class AuthService {
 
     const newTokens = JwtUtils.generateTokenPair(tokenPayload);
 
-    // Revoke old refresh token
     await prisma.refreshToken.update({
       where: { id: storedToken.id },
       data: { revokedAt: new Date() },
     });
 
-    // Store new refresh token
-    const decodedNewRefreshToken = JwtUtils.decode(newTokens.refreshToken);
     await prisma.refreshToken.create({
       data: {
         token: newTokens.refreshToken,
@@ -198,11 +169,7 @@ export class AuthService {
     return newTokens;
   }
 
-  /**
-   * Logout user by revoking refresh token.
-   */
   async logout(refreshToken: string, userId?: string): Promise<void> {
-    // Find and revoke the refresh token
     const storedToken = await prisma.refreshToken.findUnique({
       where: { token: refreshToken },
     });
@@ -213,7 +180,6 @@ export class AuthService {
         data: { revokedAt: new Date() },
       });
 
-      // Log logout
       await this.logAudit({
         userId: storedToken.userId,
         action: AUDIT_ACTIONS.LOGOUT,
@@ -223,9 +189,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Get current user profile.
-   */
   async getMe(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -249,14 +212,10 @@ export class AuthService {
     return user;
   }
 
-  /**
-   * Change user password.
-   */
   async changePassword(
     userId: string,
     data: ChangePasswordInput
   ): Promise<void> {
-    // Find user
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -265,7 +224,6 @@ export class AuthService {
       throw ApiError.notFound('User not found');
     }
 
-    // Verify current password
     const isPasswordValid = await HashUtils.compare(
       data.currentPassword,
       user.password
@@ -275,16 +233,14 @@ export class AuthService {
       throw ApiError.unauthorized('Current password is incorrect');
     }
 
-    // Hash new password
     const hashedPassword = await HashUtils.hash(data.newPassword);
 
-    // Update password
     await prisma.user.update({
       where: { id: userId },
       data: { password: hashedPassword },
     });
 
-    // Revoke all existing refresh tokens (force re-login on other devices)
+    // Sign the user out on every other device.
     await prisma.refreshToken.updateMany({
       where: {
         userId,
@@ -295,7 +251,6 @@ export class AuthService {
       },
     });
 
-    // Log password change
     await this.logAudit({
       userId,
       action: AUDIT_ACTIONS.PASSWORD_CHANGE,
@@ -304,9 +259,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * Revoke all user tokens (for security incidents).
-   */
   private async revokeAllUserTokens(userId: string): Promise<void> {
     await prisma.refreshToken.updateMany({
       where: {
@@ -321,9 +273,6 @@ export class AuthService {
     logger.warn(`All tokens revoked for user: ${userId}`);
   }
 
-  /**
-   * Log audit event.
-   */
   private async logAudit(params: {
     userId?: string;
     action: string;
@@ -346,7 +295,7 @@ export class AuthService {
         },
       });
     } catch (error) {
-      // Don't let audit logging failure break the main flow
+      // Audit logging must never break the request it is recording.
       logger.error('Failed to create audit log:', error);
     }
   }

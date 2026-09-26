@@ -1,14 +1,7 @@
 import { z } from 'zod';
 
-// ===========================================
-// USER VALIDATORS
-// ===========================================
-
 const userRoleSchema = z.enum(['ADMIN', 'MANAGER', 'SALES', 'TECHNICIAN', 'CUSTOMER']);
 
-/**
- * Create user schema (admin)
- */
 export const createUserSchema = z.object({
   email: z
     .string()
@@ -34,9 +27,6 @@ export const createUserSchema = z.object({
   role: userRoleSchema.optional().default('CUSTOMER'),
 });
 
-/**
- * Update user schema (admin)
- */
 export const updateUserSchema = z.object({
   email: z
     .string()
@@ -58,9 +48,6 @@ export const updateUserSchema = z.object({
     .optional(),
 });
 
-/**
- * Update own profile schema
- */
 export const updateProfileSchema = z.object({
   firstName: z
     .string()
@@ -81,16 +68,10 @@ export const updateProfileSchema = z.object({
     .nullable(),
 });
 
-/**
- * Change user role schema
- */
 export const changeRoleSchema = z.object({
   role: userRoleSchema,
 });
 
-/**
- * List users query schema
- */
 export const listUsersQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
@@ -102,14 +83,10 @@ export const listUsersQuerySchema = z.object({
     .optional(),
 });
 
-/**
- * User ID param schema
- */
 export const userIdParamSchema = z.object({
   id: z.string().uuid('Invalid user ID'),
 });
 
-// Export types
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

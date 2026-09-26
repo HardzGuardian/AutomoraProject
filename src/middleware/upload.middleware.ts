@@ -6,25 +6,22 @@ import { env } from '../config/env';
 import { ApiError } from '../utils/ApiError';
 import { UPLOAD } from '../config/constants';
 
-// Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, env.UPLOAD_DIR);
   },
   filename: (req, file, cb) => {
-    // Generate unique filename with UUID
+    // Never trust the client's filename on disk; keep only its extension.
     const uniqueFilename = `${uuidv4()}${path.extname(file.originalname)}`;
     cb(null, uniqueFilename);
   },
 });
 
-// File filter
 const fileFilter = (
   req: Request,
   file: Express.Multer.File,
   cb: FileFilterCallback
 ): void => {
-  // Check MIME type
   if (UPLOAD.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -36,7 +33,6 @@ const fileFilter = (
   }
 };
 
-// Create multer instance
 const upload = multer({
   storage,
   fileFilter,
@@ -45,22 +41,10 @@ const upload = multer({
   },
 });
 
-/**
- * Single file upload middleware.
- * Field name: 'file'
- */
 export const uploadSingle = upload.single('file');
 
-/**
- * Multiple files upload middleware.
- * Field name: 'files'
- * Max 10 files.
- */
 export const uploadMultiple = upload.array('files', 10);
 
-/**
- * Error handling middleware for multer errors.
- */
 export const handleUploadError = (
   err: any,
   req: Request,

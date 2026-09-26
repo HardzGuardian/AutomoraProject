@@ -1,6 +1,7 @@
 import prisma from '../../config/db';
 import { ApiError } from '../../utils/ApiError';
 import { HashUtils } from '../../utils/hash';
+import { logger } from '../../utils/logger';
 import { PAGINATION, AUDIT_ACTIONS, AUDIT_ENTITIES } from '../../config/constants';
 import {
   CreateUserInput,
@@ -12,16 +13,12 @@ import {
 import { Prisma, UserRole } from '@prisma/client';
 
 export class UserService {
-  /**
-   * List all users with pagination and filters.
-   */
   async list(query: ListUsersQuery) {
     const { page, limit, role, search, isActive } = query;
     const skip = (page - 1) * limit;
 
-    // Build where clause
     const where: Prisma.UserWhereInput = {
-      deletedAt: null, // Exclude soft-deleted users
+      deletedAt: null,
     };
 
     if (role) {
@@ -40,7 +37,6 @@ export class UserService {
       ];
     }
 
-    // Get users and total count
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
@@ -73,9 +69,6 @@ export class UserService {
     };
   }
 
-  /**
-   * Get user by ID.
-   */
   async getById(id: string) {
     const user = await prisma.user.findUnique({
       where: { id, deletedAt: null },
@@ -99,11 +92,7 @@ export class UserService {
     return user;
   }
 
-  /**
-   * Create a new user (admin).
-   */
   async create(data: CreateUserInput) {
-    // Check if email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -112,10 +101,8 @@ export class UserService {
       throw ApiError.conflict('Email already registered');
     }
 
-    // Hash password
     const hashedPassword = await HashUtils.hash(data.password);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         email: data.email,
@@ -135,7 +122,6 @@ export class UserService {
       },
     });
 
-    // Log audit
     await this.logAudit({
       action: AUDIT_ACTIONS.USER_CREATED,
       entity: AUDIT_ENTITIES.USER,
@@ -146,11 +132,7 @@ export class UserService {
     return user;
   }
 
-  /**
-   * Update user (admin).
-   */
   async update(id: string, data: UpdateUserInput) {
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id, deletedAt: null },
     });
@@ -159,7 +141,6 @@ export class UserService {
       throw ApiError.notFound('User not found');
     }
 
-    // Check if email is being changed and already exists
     if (data.email && data.email !== existingUser.email) {
       const emailExists = await prisma.user.findUnique({
         where: { email: data.email },
@@ -170,7 +151,6 @@ export class UserService {
       }
     }
 
-    // Update user
     const user = await prisma.user.update({
       where: { id },
       data,
@@ -186,7 +166,6 @@ export class UserService {
       },
     });
 
-    // Log audit
     await this.logAudit({
       action: AUDIT_ACTIONS.USER_UPDATED,
       entity: AUDIT_ENTITIES.USER,
@@ -197,9 +176,6 @@ export class UserService {
     return user;
   }
 
-  /**
-   * Update own profile.
-   */
   async updateProfile(userId: string, data: UpdateProfileInput) {
     const user = await prisma.user.update({
       where: { id: userId },
@@ -218,9 +194,7 @@ export class UserService {
     return user;
   }
 
-  /**
-   * Deactivate user (soft delete).
-   */
+  /** Soft delete: the row is kept, marked inactive, and all sessions are revoked. */
   async deactivate(id: string) {
     const user = await prisma.user.findUnique({
       where: { id, deletedAt: null },
@@ -230,12 +204,10 @@ export class UserService {
       throw ApiError.notFound('User not found');
     }
 
-    // Prevent self-deactivation
     if (user.id === id) {
       throw ApiError.badRequest('Cannot deactivate your own account');
     }
 
-    // Deactivate user
     await prisma.user.update({
       where: { id },
       data: {
@@ -244,7 +216,6 @@ export class UserService {
       },
     });
 
-    // Revoke all refresh tokens
     await prisma.refreshToken.updateMany({
       where: {
         userId: id,
@@ -255,7 +226,6 @@ export class UserService {
       },
     });
 
-    // Log audit
     await this.logAudit({
       action: AUDIT_ACTIONS.USER_DEACTIVATED,
       entity: AUDIT_ENTITIES.USER,
@@ -264,9 +234,6 @@ export class UserService {
     });
   }
 
-  /**
-   * Activate user.
-   */
   async activate(id: string) {
     const user = await prisma.user.findUnique({
       where: { id },
@@ -276,7 +243,6 @@ export class UserService {
       throw ApiError.notFound('User not found');
     }
 
-    // Activate user
     await prisma.user.update({
       where: { id },
       data: {
@@ -285,7 +251,6 @@ export class UserService {
       },
     });
 
-    // Log audit
     await this.logAudit({
       action: AUDIT_ACTIONS.USER_ACTIVATED,
       entity: AUDIT_ENTITIES.USER,
@@ -294,11 +259,7 @@ export class UserService {
     });
   }
 
-  /**
-   * Change user role.
-   */
   async changeRole(id: string, data: ChangeRoleInput, currentUserId: string) {
-    // Check if user exists
     const user = await prisma.user.findUnique({
       where: { id, deletedAt: null },
     });
@@ -307,18 +268,15 @@ export class UserService {
       throw ApiError.notFound('User not found');
     }
 
-    // Prevent self role change
     if (id === currentUserId) {
       throw ApiError.badRequest('Cannot change your own role');
     }
 
-    // Update role
     await prisma.user.update({
       where: { id },
       data: { role: data.role },
     });
 
-    // Log audit
     await this.logAudit({
       userId: currentUserId,
       action: AUDIT_ACTIONS.ROLE_CHANGED,
@@ -332,9 +290,6 @@ export class UserService {
     });
   }
 
-  /**
-   * Log audit event.
-   */
   private async logAudit(params: {
     userId?: string;
     action: string;
@@ -353,8 +308,8 @@ export class UserService {
         },
       });
     } catch (error) {
-      // Don't let audit logging failure break the main flow
-      console.error('Failed to create audit log:', error);
+      // Audit logging must never break the request it is recording.
+      logger.error('Failed to create audit log:', error);
     }
   }
 }

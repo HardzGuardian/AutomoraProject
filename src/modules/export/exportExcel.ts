@@ -13,10 +13,7 @@ export interface ExcelExportOptions {
   rows: Array<Array<string | number | null | undefined>>;
 }
 
-/**
- * Small dependency-free SpreadsheetML export. Excel and compatible spreadsheet
- * applications can open this format without a native binary XLSX library.
- */
+// Writes SpreadsheetML 2003 XML, which Excel opens natively, to avoid adding an XLSX library.
 export function exportExcel(options: ExcelExportOptions): Buffer {
   const header = options.columns
     .map((column) => `<Cell><Data ss:Type="String">${escapeXml(column)}</Data></Cell>`)

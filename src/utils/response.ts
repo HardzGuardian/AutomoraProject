@@ -1,18 +1,7 @@
 import { Response } from 'express';
 import { ApiResponse } from '../types';
 
-/**
- * Standardized API response helper.
- * Ensures consistent response format across all endpoints.
- */
 export class ResponseHelper {
-  /**
-   * Send a success response.
-   *
-   * @param res - Express response object
-   * @param data - Response data
-   * @param statusCode - HTTP status code (default: 200)
-   */
   static success<T>(res: Response, data: T, statusCode: number = 200): void {
     const response: ApiResponse<T> = {
       success: true,
@@ -21,13 +10,6 @@ export class ResponseHelper {
     res.status(statusCode).json(response);
   }
 
-  /**
-   * Send a success response with a message.
-   *
-   * @param res - Express response object
-   * @param message - Success message
-   * @param statusCode - HTTP status code (default: 200)
-   */
   static message(res: Response, message: string, statusCode: number = 200): void {
     const response: ApiResponse = {
       success: true,
@@ -36,14 +18,6 @@ export class ResponseHelper {
     res.status(statusCode).json(response);
   }
 
-  /**
-   * Send an error response.
-   *
-   * @param res - Express response object
-   * @param message - Error message
-   * @param statusCode - HTTP status code (default: 500)
-   * @param details - Additional error details
-   */
   static error(
     res: Response,
     message: string,
@@ -60,15 +34,6 @@ export class ResponseHelper {
     res.status(statusCode).json(response);
   }
 
-  /**
-   * Send a paginated response.
-   *
-   * @param res - Express response object
-   * @param data - Array of items
-   * @param page - Current page
-   * @param limit - Items per page
-   * @param total - Total number of items
-   */
   static paginated<T>(
     res: Response,
     data: T[],
