@@ -214,13 +214,25 @@ automora-backend/
 │   │   ├── rateLimit.middleware.ts
 │   │   ├── notFound.middleware.ts
 │   │   └── error.middleware.ts
+│   ├── jobs/                # Scheduled jobs
+│   │   ├── scheduler.ts     # Cron scheduler bootstrap
+│   │   └── overdueInvoice.job.ts
 │   ├── modules/             # Feature modules
 │   │   ├── auth/            # Authentication
 │   │   ├── user/            # User management
 │   │   ├── audit/           # Audit logging
-│   │   └── upload/          # File uploads
+│   │   ├── upload/          # File uploads
+│   │   ├── invoice/         # Invoicing
+│   │   ├── payment/         # Payments
+│   │   ├── notification/    # Notifications
+│   │   ├── report/          # Reporting
+│   │   ├── dashboard/       # Dashboard aggregation
+│   │   ├── export/          # Excel and PDF exporters
+│   │   └── integrations/    # Cross-module ports and providers
 │   ├── app.ts               # Express app setup
 │   └── server.ts            # Server startup
+├── tests/                   # Repository-level tests
+│   └── architecture.test.ts # Architecture guard
 ├── uploads/                 # Uploaded files
 ├── logs/                    # Application logs
 ├── .env.example             # Environment template
@@ -230,6 +242,47 @@ automora-backend/
 ├── tsconfig.json            # TypeScript config
 └── README.md                # Documentation
 ```
+
+### Architecture
+
+The backend uses a **feature-first layout**. Application layers are organised
+*inside* each feature module under `src/modules/<feature>/`, not in separate
+top-level layer folders:
+
+```
+src/modules/<feature>/
+├── <feature>.routes.ts      # Express router
+├── <feature>.controller.ts  # Request handling
+├── <feature>.service.ts     # Business logic and persistence
+├── <feature>.validator.ts   # Zod request validation
+├── <feature>.types.ts       # Feature-specific types
+├── <feature>.utils.ts       # Feature-specific helpers
+└── <feature>.*.test.ts      # Co-located unit tests
+```
+
+Each feature module contains only the layers it actually needs. Shared,
+cross-cutting concerns are the only code hoisted out of the feature modules:
+
+| Concern | Location |
+|---------|----------|
+| Shared configuration | `src/config/` |
+| Shared middleware | `src/middleware/` |
+| Shared type definitions | `src/types/` |
+| Shared utility functions | `src/utils/` |
+| Scheduled jobs | `src/jobs/` |
+| Database schema, migrations and seed | `prisma/` |
+
+Notification providers stay with their feature in
+`src/modules/notification/providers/`. The Excel and PDF exporters stay in
+`src/modules/export/`, and the ports and providers used to read other people's
+tables stay in `src/modules/integrations/<concern>/` (`client/`, `contract/`,
+`technician/`, `accounting/`, `payment-gateway/`, `sla/`). These modules hold no
+router or controller of their own — `export/` and `integrations/` are consumed
+by the feature modules that need them.
+
+Tests follow the existing project convention: unit tests are co-located beside
+the code they cover (`src/**/*.test.ts`), while repository-level tests such as
+the architecture guard live in `tests/`.
 
 ## 🧪 Testing
 

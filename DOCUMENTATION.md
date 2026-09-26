@@ -122,20 +122,58 @@ Client Request
 
 ### Module Structure
 
+The backend is feature-first: application layers live inside each feature module
+under `src/modules/<feature>/`. Only shared, cross-cutting concerns are hoisted
+into `src/`.
+
 ```
 src/
-├── config/          # Configuration files
-├── types/           # TypeScript type definitions
+├── config/          # Shared configuration files
+├── types/           # Shared TypeScript type definitions
 ├── utils/           # Shared utility functions
-├── middleware/       # Express middleware
+├── middleware/      # Shared Express middleware
+├── jobs/            # Scheduled jobs
 ├── modules/         # Feature modules
 │   ├── auth/        # Authentication
 │   ├── user/        # User management
 │   ├── audit/       # Audit logging
-│   └── upload/      # File uploads
+│   ├── upload/      # File uploads
+│   ├── invoice/     # Invoicing
+│   ├── payment/     # Payments
+│   ├── notification/ # Notifications
+│   ├── report/      # Reporting
+│   ├── dashboard/   # Dashboard aggregation
+│   ├── export/      # Excel and PDF exporters
+│   └── integrations/ # Cross-module ports and providers
 ├── app.ts           # Express app setup
 └── server.ts        # HTTP server startup
 ```
+
+### Feature Module Layout
+
+Each feature module keeps its layers as flat, consistently named files:
+
+```
+src/modules/<feature>/
+├── <feature>.routes.ts      # Express router
+├── <feature>.controller.ts  # Request handling
+├── <feature>.service.ts     # Business logic and persistence
+├── <feature>.validator.ts   # Zod request validation
+├── <feature>.types.ts       # Feature-specific types
+├── <feature>.utils.ts       # Feature-specific helpers
+└── <feature>.*.test.ts      # Co-located unit tests
+```
+
+A module only contains the layers it needs. Notification providers stay with
+their feature in `src/modules/notification/providers/`; the Excel and PDF
+exporters stay in `src/modules/export/`; and the ports and providers used to
+read other people's tables stay in `src/modules/integrations/<concern>/`
+(`client/`, `contract/`, `technician/`, `accounting/`, `payment-gateway/`,
+`sla/`). `export/` and `integrations/` expose no router or controller — they
+are consumed by the feature modules that need them.
+
+Unit tests are co-located beside the code they cover (`src/**/*.test.ts`),
+while repository-level tests such as the architecture guard live in `tests/`.
 
 ---
 
@@ -1473,15 +1511,22 @@ npm run migrate:dev  # Run migrations in development
 ### Project Structure
 
 ```
-src/
-├── config/          # Configuration files
-├── types/           # TypeScript type definitions
-├── utils/           # Shared utility functions
-├── middleware/       # Express middleware
-├── modules/         # Feature modules
-├── app.ts           # Express app setup
-└── server.ts        # HTTP server startup
+automora-backend/
+├── src/
+│   ├── config/          # Shared configuration files
+│   ├── types/           # Shared TypeScript type definitions
+│   ├── utils/           # Shared utility functions
+│   ├── middleware/      # Shared Express middleware
+│   ├── jobs/            # Scheduled jobs
+│   ├── modules/         # Feature modules (routes, controllers, services,
+│   │                    #   validators, types, utils and tests live here)
+│   ├── app.ts           # Express app setup
+│   └── server.ts        # HTTP server startup
+├── prisma/              # Database schema, migrations and seed
+└── tests/               # Repository-level tests
 ```
+
+See [Module Structure](#module-structure) for the per-feature layer layout.
 
 ### Code Style
 
@@ -1502,9 +1547,12 @@ src/
    - `yourmodule.routes.ts`
    - `yourmodule.service.ts`
    - `yourmodule.validator.ts`
+   - `yourmodule.types.ts` (if the module needs its own types)
+   - `yourmodule.utils.ts` (if the module needs its own helpers)
 3. Register routes in `app.ts`
-4. Add Prisma schema changes if needed
-5. Run migration
+4. Add co-located unit tests as `yourmodule.*.test.ts`
+5. Add Prisma schema changes if needed
+6. Run migration
 
 ### Testing
 
