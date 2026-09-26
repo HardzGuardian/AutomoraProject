@@ -1,0 +1,39 @@
+model Asset {
+  id             String    @id @default(uuid()) @db.Uuid
+  serialNumber   String    @unique
+  model          String
+  manufacturer   String?
+  description    String?
+  installDate    DateTime?
+  warrantyExpiry DateTime?
+  isActive       Boolean   @default(true)
+  notes          String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  clientId  String?         @db.Uuid
+  client    Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  sites     AssetSite[]
+  contracts ContractAsset[]
+
+  @@index([serialNumber])
+  @@index([clientId])
+  @@index([deletedAt])
+  @@map("assets")
+}
+
+model AssetSite {
+  id      String @id @default(uuid()) @db.Uuid
+  assetId String @db.Uuid
+  siteId  String @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  asset Asset      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  site  ClientSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, siteId])
+  @@map("asset_sites")
+}

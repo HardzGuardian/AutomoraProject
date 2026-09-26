@@ -1,0 +1,107 @@
+enum ContractType {
+  COMPREHENSIVE
+  NON_COMPREHENSIVE
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRING_SOON
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentFrequency {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  ANNUAL
+}
+
+model Contract {
+  id             String         @id @default(uuid()) @db.Uuid
+  contractNumber String         @unique
+  clientId       String         @db.Uuid
+  type           ContractType   @default(COMPREHENSIVE)
+  status         ContractStatus @default(DRAFT)
+  serviceTypeId  String?        @db.Uuid
+
+  startDate   DateTime
+  endDate     DateTime
+  renewalDate DateTime? // Calculated: endDate - 30 days
+
+  value            Float?
+  paymentTerms     String?
+  billingFrequency PaymentFrequency?
+
+  includedVisits Int?
+  notes          String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  client      Client             @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  serviceType ServiceType?       @relation(fields: [serviceTypeId], references: [id], onDelete: SetNull)
+  assets      ContractAsset[]
+  documents   ContractDocument[]
+  sla         ContractSLA?
+  renewal     Renewal?
+  reminders   ReminderLog[]
+  invoices    Invoice[]
+
+  @@index([contractNumber])
+  @@index([clientId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([renewalDate])
+  @@index([deletedAt])
+  @@map("contracts")
+}
+
+model ContractAsset {
+  id         String @id @default(uuid()) @db.Uuid
+  contractId String @db.Uuid
+  assetId    String @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  asset    Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, assetId])
+  @@map("contract_assets")
+}
+
+model ContractDocument {
+  id             String  @id @default(uuid()) @db.Uuid
+  contractId     String  @db.Uuid
+  uploadedFileId String  @db.Uuid
+  documentType   String  @default("CONTRACT") // CONTRACT, AMENDMENT, ADDENDUM
+  notes          String?
+
+  createdAt DateTime @default(now())
+
+  contract     Contract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  uploadedFile UploadedFile @relation(fields: [uploadedFileId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([documentType])
+  @@map("contract_documents")
+}
+
+model ContractSLA {
+  id                  String  @id @default(uuid()) @db.Uuid
+  contractId          String  @unique @db.Uuid
+  responseTimeHours   Int // SLA response time in hours
+  resolutionTimeHours Int // SLA resolution time in hours
+  penaltyClause       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("contract_slas")
+}

@@ -1,14 +1,5 @@
-/**
- * Layering / architecture guard.
- *
- * Person 4 may read Person 2 and Person 3 owned tables from exactly one place:
- * the integration adapters under src/modules/integrations/**. Anywhere else —
- * a service, a controller, a job — a direct table handle is a Rule 1
- * violation, because it couples Person 4 to another person's schema.
- *
- * These tests are intentionally simple text scans: they are cheap, they fail
- * loudly at review time, and they do not need a database.
- */
+// Tables owned by the client, contract and SLA modules may only be read from
+// src/modules/integrations. These are plain text scans, so they need no database.
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -16,7 +7,7 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const SRC_ROOT = path.join(REPO_ROOT, 'src');
 const INTEGRATIONS_ROOT = path.join(SRC_ROOT, 'modules', 'integrations');
 
-const PERSON_2_AND_3_HANDLES = [
+const EXTERNAL_TABLE_HANDLES = [
   'prisma.client',
   'prisma.contract',
   'prisma.contractAsset',
@@ -61,12 +52,12 @@ function isInsideIntegrations(file: string): boolean {
 
 const allSourceFiles = walk(SRC_ROOT).filter((file) => !file.endsWith('.d.ts'));
 
-describe('architecture: Person 4 layering', () => {
+describe('architecture: module boundaries', () => {
   it('finds source files to scan', () => {
     expect(allSourceFiles.length).toBeGreaterThan(0);
   });
 
-  it('never queries a Person 2 or Person 3 table outside the integration ports', () => {
+  it('never queries client, contract or SLA tables outside the integration ports', () => {
     const violations: string[] = [];
 
     for (const file of allSourceFiles) {
@@ -74,7 +65,7 @@ describe('architecture: Person 4 layering', () => {
       if (file.endsWith('.test.ts')) continue;
 
       const source = stripComments(fs.readFileSync(file, 'utf8'));
-      for (const handle of PERSON_2_AND_3_HANDLES) {
+      for (const handle of EXTERNAL_TABLE_HANDLES) {
         if (source.includes(handle)) {
           violations.push(
             `${path.relative(REPO_ROOT, file)} references ${handle}`
@@ -86,7 +77,7 @@ describe('architecture: Person 4 layering', () => {
     expect(violations).toEqual([]);
   });
 
-  it('keeps the sanctioned Person 2 adapters inside src/modules/integrations', () => {
+  it('keeps the client and contract adapters inside src/modules/integrations', () => {
     const portFiles = walk(INTEGRATIONS_ROOT).filter(
       (file) => !file.endsWith('.test.ts')
     );
@@ -99,19 +90,17 @@ describe('architecture: Person 4 layering', () => {
     ).toBe(true);
   });
 
-  it('does not fork Person 2 jobs on the Person 4 branch', () => {
+  it('does not copy contract or SLA jobs into this module', () => {
     const jobsRoot = path.join(SRC_ROOT, 'jobs');
     const jobFiles = fs
       .readdirSync(jobsRoot)
       .filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts'));
 
-    // Person 2 owns contractStatus.job.ts and renewalReminder.job.ts.
-    // Person 3 owns slaMonitor.job.ts. None may be copied here.
+    // These jobs belong to the contract and SLA modules and must not be copied here.
     expect(jobFiles).not.toContain('contractStatus.job.ts');
     expect(jobFiles).not.toContain('renewalReminder.job.ts');
     expect(jobFiles).not.toContain('slaMonitor.job.ts');
 
-    // Person 4 owns exactly these job modules.
     expect(jobFiles.sort()).toEqual([
       'index.ts',
       'overdueInvoice.job.ts',
@@ -119,19 +108,18 @@ describe('architecture: Person 4 layering', () => {
     ]);
   });
 
-  it('does not duplicate the Person 2 schema migration', () => {
+  it('does not duplicate the client/contract schema migration', () => {
     const migrationsRoot = path.join(REPO_ROOT, 'prisma', 'migrations');
     const folders = fs
       .readdirSync(migrationsRoot, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name);
 
-    // The Person 2 models are created by Person 2's own migration folder.
     expect(folders).not.toContain('20260922000000_person2_models');
     expect(folders).toContain('20260924000000_person4_finance');
   });
 
-  it('keeps the SLA adapter on the Person 4 side', () => {
+  it('keeps the SLA adapter under integrations', () => {
     const adapter = path.join(
       INTEGRATIONS_ROOT,
       'sla',
@@ -141,11 +129,23 @@ describe('architecture: Person 4 layering', () => {
   });
 });
 
-describe('architecture: Person 3 persistence is never invented', () => {
-  const schemaPath = path.join(REPO_ROOT, 'prisma', 'schema.prisma');
+function readPrismaSchema(): string {
+  const prismaRoot = path.join(REPO_ROOT, 'prisma');
+  const files: string[] = [];
+  const collect = (dir: string) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== 'migrations') collect(full);
+      else if (entry.isFile() && entry.name.endsWith('.prisma')) files.push(full);
+    }
+  };
+  collect(prismaRoot);
+  return files.map((file) => stripComments(fs.readFileSync(file, 'utf8'))).join('\n');
+}
 
-  it('defines no Person 3 models', () => {
-    const schema = stripComments(fs.readFileSync(schemaPath, 'utf8'));
+describe('architecture: no ticket or visit models are defined here', () => {
+  it('defines no ticket, visit or SLA models', () => {
+    const schema = readPrismaSchema();
     for (const model of [
       'Ticket',
       'TicketMessage',
@@ -159,16 +159,16 @@ describe('architecture: Person 3 persistence is never invented', () => {
     }
   });
 
-  it('defines the four Person 4 models exactly once', () => {
-    const schema = stripComments(fs.readFileSync(schemaPath, 'utf8'));
+  it('defines the four finance models exactly once', () => {
+    const schema = readPrismaSchema();
     for (const model of ['Invoice', 'InvoiceItem', 'Payment', 'NotificationLog']) {
       const matches = schema.match(new RegExp(`^model ${model}\\b`, 'gm')) ?? [];
       expect(matches).toHaveLength(1);
     }
   });
 
-  it('defines the six Person 4 enums exactly once', () => {
-    const schema = stripComments(fs.readFileSync(schemaPath, 'utf8'));
+  it('defines the six finance enums exactly once', () => {
+    const schema = readPrismaSchema();
     for (const enumeration of [
       'InvoiceSourceType',
       'InvoiceStatus',
@@ -184,7 +184,7 @@ describe('architecture: Person 3 persistence is never invented', () => {
   });
 
   it('keeps the notification de-duplication unique constraint', () => {
-    const schema = stripComments(fs.readFileSync(schemaPath, 'utf8'));
+    const schema = readPrismaSchema();
     expect(schema).toContain('@@unique([eventKey, channel, recipient])');
   });
 });

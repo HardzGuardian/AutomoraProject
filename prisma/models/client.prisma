@@ -1,0 +1,80 @@
+enum ClientCategory {
+  CORPORATE
+  RETAIL
+  GOVERNMENT
+}
+
+model Client {
+  id          String         @id @default(uuid()) @db.Uuid
+  companyName String
+  industry    String?
+  category    ClientCategory @default(CORPORATE)
+  taxId       String? // GST / Tax ID
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
+  phone       String?
+  email       String?
+  notes       String?
+
+  // Open question: should sales users only see clients assigned to them?
+  assignedToId String? @db.Uuid
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  contacts  ClientContact[]
+  sites     ClientSite[]
+  contracts Contract[]
+  assets    Asset[]
+  invoices  Invoice[]
+  payments  Payment[]
+
+  @@index([companyName])
+  @@index([category])
+  @@index([assignedToId])
+  @@index([deletedAt])
+  @@map("clients")
+}
+
+model ClientContact {
+  id        String  @id @default(uuid()) @db.Uuid
+  clientId  String  @db.Uuid
+  name      String
+  role      String? // e.g. "Primary", "Billing", "Technical"
+  phone     String?
+  email     String?
+  isPrimary Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([isPrimary])
+  @@map("client_contacts")
+}
+
+model ClientSite {
+  id       String  @id @default(uuid()) @db.Uuid
+  clientId String  @db.Uuid
+  siteName String
+  address  String?
+  city     String?
+  state    String?
+  pincode  String?
+  phone    String?
+  notes    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assets AssetSite[]
+
+  @@index([clientId])
+  @@map("client_sites")
+}

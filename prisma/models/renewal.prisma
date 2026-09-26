@@ -1,0 +1,56 @@
+enum RenewalStatus {
+  PENDING
+  IN_DISCUSSION
+  RENEWED
+  NOT_RENEWED
+}
+
+model Renewal {
+  id              String        @id @default(uuid()) @db.Uuid
+  contractId      String        @unique @db.Uuid
+  status          RenewalStatus @default(PENDING)
+  quotesSent      Int           @default(0)
+  lastContactDate DateTime?
+  outcomeNotes    String?
+  renewedValue    Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contract  Contract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  followUps RenewalFollowUp[]
+
+  @@index([contractId])
+  @@index([status])
+  @@map("renewals")
+}
+
+model RenewalFollowUp {
+  id               String    @id @default(uuid()) @db.Uuid
+  renewalId        String    @db.Uuid
+  notes            String
+  outcome          String? // e.g. "CONTACTED", "QUOTE_SENT", "NO_RESPONSE"
+  nextFollowUpDate DateTime?
+
+  createdAt DateTime @default(now())
+
+  renewal Renewal @relation(fields: [renewalId], references: [id], onDelete: Cascade)
+
+  @@index([renewalId])
+  @@map("renewal_follow_ups")
+}
+
+model ReminderLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  contractId   String   @db.Uuid
+  reminderType String // "30_DAY", "60_DAY", "90_DAY"
+  sentAt       DateTime @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, reminderType])
+  @@index([contractId])
+  @@index([reminderType])
+  @@index([sentAt])
+  @@map("reminder_logs")
+}

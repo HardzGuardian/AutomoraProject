@@ -1,0 +1,49 @@
+enum UserRole {
+  ADMIN
+  MANAGER
+  SALES
+  TECHNICIAN
+  CUSTOMER
+}
+
+model User {
+  id        String    @id @default(uuid()) @db.Uuid
+  email     String    @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole  @default(CUSTOMER)
+  isActive  Boolean   @default(true)
+  avatar    String?
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens    RefreshToken[]
+  auditLogs        AuditLog[]
+  uploadedFiles    UploadedFile[]
+  createdInvoices  Invoice[]      @relation("InvoiceCreatedBy")
+  receivedPayments Payment[]      @relation("PaymentReceivedBy")
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  token     String    @unique
+  userId    String    @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}

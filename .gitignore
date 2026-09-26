@@ -41,9 +41,23 @@ Thumbs.db
 uploads/*
 !uploads/.gitkeep
 
-# Prisma
-prisma/migrations/**/migration_lock.toml
-
 # Temp
 tmp/
 temp/
+
+# AI assistant / tooling files (local only, not part of the project)
+.serena/
+.claude/
+.cursor/
+.windsurf/
+.aider*
+.codex/
+.gemini/
+.planning/
+graphify-out/
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.cursorrules
+.windsurfrules
+.github/copilot-instructions.md

@@ -1,0 +1,33 @@
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  IN_APP
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model NotificationLog {
+  id           String              @id @default(uuid()) @db.Uuid
+  eventKey     String
+  channel      NotificationChannel
+  recipient    String
+  status       NotificationStatus
+  provider     String?
+  errorMessage String?
+  metadata     Json?
+  relatedId    String?
+  sentAt       DateTime?
+  createdAt    DateTime            @default(now())
+
+  // De-duplication key: one row per event, channel and recipient.
+  @@unique([eventKey, channel, recipient])
+  @@index([eventKey])
+  @@index([status])
+  @@index([createdAt])
+  @@map("notification_logs")
+}
