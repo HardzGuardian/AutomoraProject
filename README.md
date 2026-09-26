@@ -248,7 +248,7 @@ automora-backend/
 
 ### Architecture
 
-Each feature lives in `src/modules/<feature>/`, with one file per layer:
+This project uses a **modular monolith** architecture. Instead of grouping all routes, controllers, services, and validators into separate top-level folders (e.g., `src/routes/`, `src/controllers/`, `src/services/`, `src/validators/`), these layers are grouped together **inside each feature module**:
 
 ```
 src/modules/<feature>/
@@ -256,12 +256,23 @@ src/modules/<feature>/
 ├── <feature>.controller.ts  # Request and response handling
 ├── <feature>.service.ts     # Business logic and database access
 ├── <feature>.validator.ts   # Zod request validation
-└── <feature>.types.ts       # Feature types (where needed)
+├── <feature>.types.ts       # Feature types (where needed)
+└── <feature>.test.ts        # Co-located unit tests (where applicable)
 ```
 
+#### Why This Architecture?
+
+- **Keeps each feature/domain together.** All code related to a single domain (routes, business logic, validation, types) lives in one folder, so the full scope of a feature is visible at a glance.
+- **Makes ownership of a module clear.** Each module is self-contained, so it is immediately obvious which files belong to which feature and who owns them.
+- **Makes related files easier to find.** Developers working on a feature only need to look in one folder instead of searching across multiple top-level directories.
+- **Reduces unrelated files being mixed together.** Without the module boundary, a folder like `src/services/` would contain every service in the system, making it harder to distinguish what belongs where.
+- **Allows modules to grow independently.** A feature can add helpers, sub-modules, or tests without affecting the global namespace or requiring changes to shared folders.
+- **Keeps shared infrastructure separate.** Cross-cutting concerns that are not tied to any single feature - configuration (`src/config/`), middleware (`src/middleware/`), utilities (`src/utils/`), scheduled jobs (`src/jobs/`), and the database schema (`prisma/`) - stay in their own top-level folders, clearly separated from feature-specific code.
+
+#### Module Rules
+
 - Shared code lives in `src/config`, `src/middleware`, `src/utils` and `src/types`.
-- Modules never query another module's tables directly. Cross-module reads go
-  through `src/modules/integrations/`, and `tests/architecture.test.ts` enforces this.
+- Modules never query another module's tables directly. Cross-module reads go through `src/modules/integrations/`, and `tests/architecture.test.ts` enforces this.
 - Unit tests sit next to the code they test (`*.test.ts`).
 
 ## Database
@@ -350,10 +361,8 @@ See `.env.example` for all available configuration options.
 
 ### 2026-09-26 — Database and project cleanup
 
-- **Prisma schema:** split into per-domain files under `prisma/models/`. Fixed five
-  relations that were missing their reverse side, which stopped `prisma generate` from running.
-- **Migrations:** added the missing client/contract migration, so the full chain now runs on
-  an empty database. Verified that the database matches the schema.
+- **Prisma schema:** split into per-domain files under `prisma/models/`. Fixed five relations that were missing their reverse side, which stopped `prisma generate` from running.
+- **Migrations:** added the missing client/contract migration, so the full chain now runs on an empty database. Verified that the database matches the schema.
 - **Prisma config:** moved to `prisma.config.ts` (replaces the deprecated `package.json` block).
 - **Build:** added `tsconfig.build.json` so the build compiles only `src/` and leaves tests out.
 - **Code cleanup:** removed emoji and boilerplate comments; switched remaining `console` calls to the logger.
