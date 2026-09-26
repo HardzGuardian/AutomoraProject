@@ -81,7 +81,7 @@ export class UploadController {
       }
 
       await uploadService.delete(id, userId, userRole);
-      ResponseHelper.message(res, 'File deleted successfully');
+      ResponseHelper.noContent(res);
     } catch (error) {
       next(error);
     }

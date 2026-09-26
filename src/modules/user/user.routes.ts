@@ -49,6 +49,14 @@ router.patch(
   asyncHandler(userController.update)
 );
 
+router.delete(
+  '/:id',
+  auth,
+  role(['ADMIN']),
+  validate(userIdParamSchema, 'params'),
+  asyncHandler(userController.remove)
+);
+
 router.patch(
   '/:id/deactivate',
   auth,

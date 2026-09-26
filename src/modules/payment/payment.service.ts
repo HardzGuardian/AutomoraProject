@@ -132,6 +132,26 @@ export class PaymentService {
     return this.decorateClient(payment);
   }
 
+  /** Payments are never deleted; only a pending payment that was never applied can be cancelled. */
+  async cancel(id: string, actor: PaymentActor) {
+    this.assertFinancialRole(actor);
+    const payment = await this.database.payment.findUnique({ where: { id } });
+    if (!payment) throw ApiError.notFound('Payment not found');
+    if (payment.status === PaymentStatus.CANCELLED) return;
+    if (payment.status !== PaymentStatus.PENDING || payment.appliedAt) {
+      throw ApiError.conflict('Only a pending payment can be cancelled');
+    }
+
+    await this.database.payment.update({
+      where: { id },
+      data: { status: PaymentStatus.CANCELLED },
+    });
+    await this.audit(actor, AUDIT_ACTIONS.PAYMENT_STATUS_CHANGED, id, {
+      previousStatus: payment.status,
+      status: PaymentStatus.CANCELLED,
+    });
+  }
+
   async list(query: ListPaymentsQuery, actor: PaymentActor) {
     this.assertFinancialRole(actor);
     const page = query.page ?? 1;

@@ -22,7 +22,7 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: FileFilterCallback
 ): void => {
-  if (UPLOAD.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+  if ((UPLOAD.ALLOWED_MIME_TYPES as readonly string[]).includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(

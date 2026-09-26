@@ -53,6 +53,15 @@ export class InvoiceController {
     }
   }
 
+  async cancel(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await invoiceService.cancel(req.params.id, actorFromRequest(req));
+      ResponseHelper.noContent(res);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async markOverdue(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const invoice = await invoiceService.markOverdue(

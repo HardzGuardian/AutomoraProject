@@ -51,5 +51,13 @@ router.get(
   asyncHandler(paymentController.getById)
 );
 
+router.delete(
+  '/:id',
+  auth,
+  role([...financialRoles]),
+  validate(paymentIdParamSchema, 'params'),
+  asyncHandler(paymentController.cancel)
+);
+
 export default router;
 

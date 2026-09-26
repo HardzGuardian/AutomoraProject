@@ -63,4 +63,12 @@ router.get(
   asyncHandler(invoiceController.getById)
 );
 
+router.delete(
+  '/:id',
+  auth,
+  role([...financialRoles]),
+  validate(invoiceIdParamSchema, 'params'),
+  asyncHandler(invoiceController.cancel)
+);
+
 export default router;

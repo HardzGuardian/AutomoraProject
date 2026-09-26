@@ -5,7 +5,8 @@ import { JwtUtils } from '../../utils/jwt';
 import { DateHelpers } from '../../utils/dateHelpers';
 import { logger } from '../../utils/logger';
 import { RegisterInput, LoginInput, ChangePasswordInput } from './auth.validator';
-import { TokenPair, UserPayload } from '../../types';
+import { JwtPayload, TokenPair } from '../../types';
+import { Prisma } from '@prisma/client';
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from '../../config/constants';
 import { env } from '../../config/env';
 
@@ -90,8 +91,8 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
-    const tokenPayload: UserPayload = {
-      id: user.id,
+    const tokenPayload: JwtPayload = {
+      userId: user.id,
       email: user.email,
       role: user.role,
     };
@@ -145,8 +146,8 @@ export class AuthService {
       throw ApiError.unauthorized('Account is deactivated');
     }
 
-    const tokenPayload: UserPayload = {
-      id: storedToken.user.id,
+    const tokenPayload: JwtPayload = {
+      userId: storedToken.user.id,
       email: storedToken.user.email,
       role: storedToken.user.role,
     };
@@ -289,7 +290,7 @@ export class AuthService {
           action: params.action,
           entity: params.entity,
           entityId: params.entityId,
-          metadata: params.metadata,
+          metadata: params.metadata as Prisma.InputJsonValue | undefined,
           ipAddress: params.ipAddress,
           userAgent: params.userAgent,
         },

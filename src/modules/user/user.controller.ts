@@ -110,8 +110,31 @@ export class UserController {
   ): Promise<void> {
     try {
       const { id } = req.params;
-      await userService.deactivate(id);
+      const currentUserId = req.user?.id;
+      if (!currentUserId) {
+        throw ApiError.unauthorized('Authentication required');
+      }
+      await userService.deactivate(id, currentUserId);
       ResponseHelper.message(res, 'User deactivated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async remove(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const { id } = req.params;
+      const currentUserId = req.user?.id;
+      if (!currentUserId) {
+        throw ApiError.unauthorized('Authentication required');
+      }
+      // Users are soft deleted so their invoices, payments and audit trail stay intact.
+      await userService.deactivate(id, currentUserId);
+      ResponseHelper.noContent(res);
     } catch (error) {
       next(error);
     }

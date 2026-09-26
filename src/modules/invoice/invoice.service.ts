@@ -189,6 +189,25 @@ export class InvoiceService {
     return this.decorate(invoice);
   }
 
+  /** Invoices are never deleted; cancelling voids them and keeps the audit trail. */
+  async cancel(id: string, actor: InvoiceActor) {
+    this.assertFinancialRole(actor);
+    const existing = await this.getById(id, actor);
+    if (existing.status === 'CANCELLED') return;
+    if (existing.status === 'PAID' || existing.paidAmount.gt(0)) {
+      throw ApiError.conflict('An invoice with payments applied cannot be cancelled');
+    }
+
+    await this.database.invoice.update({
+      where: { id },
+      data: { status: 'CANCELLED' },
+    });
+    await this.audit(actor, AUDIT_ACTIONS.INVOICE_STATUS_CHANGED, id, {
+      previousStatus: existing.status,
+      status: 'CANCELLED',
+    });
+  }
+
   async markOverdue(id: string, actor?: InvoiceActor) {
     if (actor) this.assertFinancialRole(actor);
     const invoice = await this.getById(id);

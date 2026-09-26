@@ -22,7 +22,7 @@ export const errorHandler = (
       success: false,
       error: {
         message: err.message,
-        ...(err.details && { details: err.details }),
+        ...(err.details !== undefined && { details: err.details }),
       },
     });
     return;

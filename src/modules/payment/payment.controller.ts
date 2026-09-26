@@ -37,6 +37,15 @@ export class PaymentController {
     }
   }
 
+  async cancel(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await paymentService.cancel(req.params.id, actorFromRequest(req));
+      ResponseHelper.noContent(res);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async createGatewayPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await paymentService.createGatewayPayment(req.body, actorFromRequest(req));

@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env';
 import { JwtPayload, TokenPair } from '../types';
 import { ApiError } from './ApiError';
@@ -6,14 +6,14 @@ import { ApiError } from './ApiError';
 export class JwtUtils {
   static generateAccessToken(payload: JwtPayload): string {
     return jwt.sign(payload, env.JWT_SECRET, {
-      expiresIn: env.JWT_EXPIRES_IN,
+      expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn'],
       algorithm: 'HS256',
     });
   }
 
   static generateRefreshToken(payload: JwtPayload): string {
     return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-      expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+      expiresIn: env.JWT_REFRESH_EXPIRES_IN as SignOptions['expiresIn'],
       algorithm: 'HS256',
     });
   }

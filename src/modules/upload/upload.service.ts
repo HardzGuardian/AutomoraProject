@@ -1,4 +1,5 @@
 import prisma from '../../config/db';
+import { Prisma } from '@prisma/client';
 import { ApiError } from '../../utils/ApiError';
 import { logger } from '../../utils/logger';
 import { AUDIT_ACTIONS, AUDIT_ENTITIES } from '../../config/constants';
@@ -167,7 +168,7 @@ export class UploadService {
           action: params.action,
           entity: params.entity,
           entityId: params.entityId,
-          metadata: params.metadata,
+          metadata: params.metadata as Prisma.InputJsonValue | undefined,
         },
       });
     } catch (error) {

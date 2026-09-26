@@ -195,7 +195,7 @@ export class UserService {
   }
 
   /** Soft delete: the row is kept, marked inactive, and all sessions are revoked. */
-  async deactivate(id: string) {
+  async deactivate(id: string, currentUserId: string) {
     const user = await prisma.user.findUnique({
       where: { id, deletedAt: null },
     });
@@ -204,7 +204,7 @@ export class UserService {
       throw ApiError.notFound('User not found');
     }
 
-    if (user.id === id) {
+    if (id === currentUserId) {
       throw ApiError.badRequest('Cannot deactivate your own account');
     }
 
@@ -227,6 +227,7 @@ export class UserService {
     });
 
     await this.logAudit({
+      userId: currentUserId,
       action: AUDIT_ACTIONS.USER_DEACTIVATED,
       entity: AUDIT_ENTITIES.USER,
       entityId: id,
@@ -304,7 +305,7 @@ export class UserService {
           action: params.action,
           entity: params.entity,
           entityId: params.entityId,
-          metadata: params.metadata,
+          metadata: params.metadata as Prisma.InputJsonValue | undefined,
         },
       });
     } catch (error) {

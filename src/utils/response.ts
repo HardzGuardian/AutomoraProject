@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { ApiResponse } from '../types';
+import { ApiResponse, PaginatedResponse } from '../types';
 
 export class ResponseHelper {
   static success<T>(res: Response, data: T, statusCode: number = 200): void {
@@ -16,6 +16,10 @@ export class ResponseHelper {
       message,
     };
     res.status(statusCode).json(response);
+  }
+
+  static noContent(res: Response): void {
+    res.status(204).end();
   }
 
   static error(
@@ -41,7 +45,7 @@ export class ResponseHelper {
     limit: number,
     total: number
   ): void {
-    const response: ApiResponse<{ data: T[]; pagination: typeof pagination }> = {
+    const response: ApiResponse<PaginatedResponse<T>> = {
       success: true,
       data: {
         data,
